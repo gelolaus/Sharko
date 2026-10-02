@@ -40,5 +40,5 @@ def write_synthetic_csv(path: Path, n: int = 600, seed: int = 0) -> Path:
     for column in (" education", " self_employed", " loan_status"):
         frame[column] = " " + frame[column].astype(str)
     path.parent.mkdir(parents=True, exist_ok=True)
-    frame.to_csv(path, index=False, lineterminator="\n")
+    frame.to_csv(path, index=False, lineterminator="\n", encoding="utf-8")
     return path

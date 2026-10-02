@@ -9,7 +9,7 @@ from sharko.config import AMOUNT_STEP, SEED
 
 
 def load_dataset(path: Path | str) -> pd.DataFrame:
-    frame = pd.read_csv(path, skipinitialspace=True)
+    frame = pd.read_csv(path, skipinitialspace=True, encoding="utf-8")
     frame.columns = frame.columns.str.strip()
     for column in frame.columns:
         if is_object_dtype(frame[column].dtype) or is_string_dtype(
