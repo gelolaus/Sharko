@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 
 from sharko.data import SearchSpace
+from sharko.search import SearchResult, Strategy
 
 SPACE = SearchSpace(100_000, 1_100_000, 100_000, tuple(range(2, 21, 2)))
 FIXED = {
@@ -154,3 +155,58 @@ NO_FLIPS_FIXTURE = make_results_frame(
         (1, "combined", False, 90, None),
     ]
 )
+
+
+def no_flip(strategy, n):
+    return SearchResult(
+        strategy, 500_000, 10, 0.1, False, n, None, None, None, None, None, None, None, None
+    )
+
+
+FLIP_RESULT = SearchResult(
+    Strategy.TERM_ONLY, 500_000, 10, 0.1, True, 5, 500_000, 4, 6 / 18, 0, 0.0, 6, 0.9, 0.8
+)
+ALL_NO_FLIP = {
+    Strategy.AMOUNT_ONLY: no_flip(Strategy.AMOUNT_ONLY, 10),
+    Strategy.TERM_ONLY: no_flip(Strategy.TERM_ONLY, 9),
+    Strategy.COMBINED: no_flip(Strategy.COMBINED, 90),
+}
+METRICS = {
+    "accuracy": 0.97,
+    "precision": 0.98,
+    "recall": 0.97,
+    "f1": 0.975,
+    "roc_auc": 0.99,
+    "confusion_matrix": [[300, 10], [15, 500]],
+}
+
+
+def check_args(cibil, amount=5_000_000, term=12):
+    return [
+        "--education",
+        "Graduate",
+        "--self-employed",
+        "No",
+        "--no-of-dependents",
+        "2",
+        "--income-annum",
+        "4100000",
+        "--cibil-score",
+        str(cibil),
+        "--residential-assets-value",
+        "2700000",
+        "--commercial-assets-value",
+        "2200000",
+        "--luxury-assets-value",
+        "8800000",
+        "--bank-asset-value",
+        "3300000",
+        "--loan-amount",
+        str(amount),
+        "--loan-term",
+        str(term),
+    ]
+
+
+ARGS_LOW_CIBIL_LONG_TERM = check_args(400)
+ARGS_APPROVED = check_args(750)
