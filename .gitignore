@@ -1,3 +1,8 @@
 docs/
 AGENTS.md
 Powerpuff_SF241_MODESIM_Midterm Requirement.pdf
+artifacts/
+outputs/
+__pycache__/
+.pytest_cache/
+*.pyc
