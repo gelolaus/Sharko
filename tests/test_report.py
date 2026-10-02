@@ -23,4 +23,4 @@ def test_report_handles_strategy_with_no_flips(tmp_path):
 
 def test_paired_comparison_csv_has_pair_column(tmp_path):
     generate_report(RESULTS_FIXTURE, tmp_path)
-    assert {"pair", "metric", "mean_a", "mean_b", "n_both"} <= set(pd.read_csv(tmp_path / "paired_comparison.csv").columns)
+    assert {"pair", "metric", "mean_a", "mean_b", "n_both"} <= set(pd.read_csv(tmp_path / "paired_comparison.csv", encoding="utf-8").columns)
