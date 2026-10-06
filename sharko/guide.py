@@ -25,7 +25,8 @@ def start_screen() -> str:
         "  1. python -m sharko train",
         "       Teach Sharko from the loan data. Run this once.",
         "  2. python -m sharko check --example",
-        "       See a full worked example, no typing needed.",
+        "       See a full worked example, no typing needed. It also",
+        "       saves a report you can open: look in the Reports folder.",
         "",
         "THEN",
         _RULE,
@@ -70,7 +71,8 @@ def tutorial() -> str:
         "  python -m sharko check --example",
         *wrap(
             "Shows a full result for a sample application, so you can see "
-            "what the output looks like before typing anything.",
+            "what the output looks like before typing anything. It also "
+            "saves a report (see Step 4).",
             2,
         ),
         "",
@@ -78,9 +80,10 @@ def tutorial() -> str:
         _RULE,
         "  python -m sharko check",
         *wrap(
-            "Answer 11 short questions. Each one shows the allowed answers; "
-            "type the number or the name. A wrong answer is explained and "
-            "asked again.",
+            "Type your first and last name (they only name your report "
+            "file), then answer 11 short questions. Each one shows the "
+            "allowed answers; type the number or the name. A wrong answer "
+            "is explained and asked again.",
             2,
         ),
         "",
@@ -92,6 +95,18 @@ def tutorial() -> str:
         "  THE 3 WAYS COMPARED     Amount only, term only, or both",
         "  IMPORTANT               What this is not (not a lender decision)",
         "  TECHNICAL DETAILS       Exact numbers. Optional, for analysts.",
+        "",
+        "Your report file",
+        _RULE,
+        *wrap(
+            "Every check saves a report: "
+            "Reports/FirstName_LastName_Results.html, inside the Sharko "
+            "folder. Double-click it, or open it in any web browser. It "
+            "holds all your answers, the result, and every try the search "
+            "made, step by step. Add --open to open it automatically. The "
+            "same name twice saves a new file ending in _2, _3 and so on.",
+            2,
+        ),
         "",
         "Step 5 - Look back",
         _RULE,
@@ -105,9 +120,9 @@ def tutorial() -> str:
         *wrap(
             "Run experiment first. It tests many loans and takes a short "
             "while. Then report draws four charts and opens the page "
-            "outputs/report.html in your browser. The page holds all four "
-            "charts with a caption under each. Open that file any time, or "
-            "send it to a teammate.",
+            "Reports/Experiment_Report.html in your browser. The page holds "
+            "all four charts with a caption under each. Open that file any "
+            "time, or send it to a teammate.",
             2,
         ),
         "  The four charts:",

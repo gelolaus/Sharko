@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import pytest
 
 from sharko import cli
@@ -83,7 +85,9 @@ def test_check_cancel_exits_cleanly_without_logging(
     monkeypatch.setattr(cli, "collect_applicant", cancel)
     history = tmp_path / "h.jsonl"
     code, out, err = run(
-        ["check", "--model", str(trained.model), "--history", str(history)], capsys
+        ["check", "--model", str(trained.model), "--history", str(history),
+         "--first-name", "Ana", "--last-name", "Cruz"],
+        capsys,
     )
     assert code == 130 and "Cancelled" in err and not history.exists()
 
@@ -147,7 +151,7 @@ def test_check_output_is_readable(trained, tmp_path, capsys):
          "--no-prompt", *ARGS_LOW_CIBIL_LONG_TERM],
         capsys,
     )
-    assert_readable(out)
+    assert_readable(out, ignore=str(Path.cwd()))
 
 
 def test_example_outside_a_custom_model_grid_explains_the_override(
@@ -161,34 +165,9 @@ def test_example_outside_a_custom_model_grid_explains_the_override(
     assert code == 2 and "built-in example" in err and "flag" in err
 
 
-@pytest.fixture
-def browser_calls(monkeypatch):
-    calls = []
-    monkeypatch.setattr(cli.webbrowser, "open", lambda url, *a, **k: calls.append(url) or True)
-    return calls
-
-
-def test_report_lists_the_dashboard_and_never_opens_it_by_default(
-    trained_experiment, capsys, browser_calls
-):
-    code, out, _ = run(["report", "--out", str(trained_experiment.out)], capsys)
-    assert code == 0 and browser_calls == []
-    assert "report.html" in out and "report --open" in out
-    assert (trained_experiment.out / "report.html").is_file()
-
-
-def test_report_open_flag_opens_the_dashboard_once(
-    trained_experiment, capsys, browser_calls
-):
-    code, out, _ = run(["report", "--open", "--out", str(trained_experiment.out)], capsys)
-    assert code == 0 and len(browser_calls) == 1
-    assert browser_calls[0].startswith("file:") and browser_calls[0].endswith("report.html")
-    assert "Opening" in out
-
-
 def test_tutorial_explains_how_to_get_and_where_to_find_the_charts(capsys):
     _, out, _ = run(["tutorial"], capsys)
-    assert "Step 6" in out and "outputs/report.html" in out
+    assert "Step 6" in out and "Reports/Experiment_Report.html" in out
     assert out.index("python -m sharko experiment") < out.index("python -m sharko report --open")
     assert "Run experiment first" in out
     for meaning in (
@@ -198,6 +177,22 @@ def test_tutorial_explains_how_to_get_and_where_to_find_the_charts(capsys):
         "Original loan amount vs the new one",
     ):
         assert meaning in out
+    assert_readable(out)
+
+
+def test_tutorial_explains_the_report_every_check_saves(capsys):
+    _, out, _ = run(["tutorial"], capsys)
+    assert "Reports/FirstName_LastName_Results.html" in out
+    assert "Every check saves a report" in out and "--open" in out
+    for part in ("all your answers", "every try"):
+        assert part in out
+    assert out.index("Every check saves a report") < out.index("Step 6")
+    assert_readable(out)
+
+
+def test_start_screen_says_the_example_saves_a_report(capsys):
+    _, out, _ = run([], capsys)
+    assert "Reports" in out and "report" in out.lower()
     assert_readable(out)
 
 

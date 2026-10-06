@@ -28,7 +28,7 @@ _AMOUNT_STRATEGIES = (Strategy.AMOUNT_ONLY.value, Strategy.COMBINED.value)
 
 # Colour-blind-safe palette (Okabe-Ito). Values are always printed too,
 # so colour never carries the meaning alone.
-_COLORS = {
+STRATEGY_COLORS = {
     Strategy.AMOUNT_ONLY.value: "#0072B2",
     Strategy.TERM_ONLY.value: "#E69F00",
     Strategy.COMBINED.value: "#009E73",
@@ -38,7 +38,14 @@ _FIGSIZE = (7.5, 5.0)
 _DPI = 150
 
 
-def generate_report(results: pd.DataFrame, out_dir: Path) -> list[Path]:
+def generate_report(
+    results: pd.DataFrame, out_dir: Path, reports_dir: Path | None = None
+) -> list[Path]:
+    """Write tables, charts and the dashboard page.
+
+    The dashboard goes to `reports_dir` as Experiment_Report.html when given,
+    otherwise next to the charts as report.html.
+    """
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
     written: list[Path] = []
@@ -72,9 +79,12 @@ def generate_report(results: pd.DataFrame, out_dir: Path) -> list[Path]:
         )
     written.extend(figures.values())
 
-    written.append(
-        write_dashboard(summary, eligible, figures, out_dir / "report.html")
-    )
+    if reports_dir is None:
+        page = out_dir / "report.html"
+    else:
+        Path(reports_dir).mkdir(parents=True, exist_ok=True)
+        page = Path(reports_dir) / "Experiment_Report.html"
+    written.append(write_dashboard(summary, eligible, figures, page))
     return written
 
 
@@ -110,7 +120,7 @@ def _values_for(
 
 
 def _color(name: str) -> str:
-    return _COLORS.get(name, _FALLBACK_COLOR)
+    return STRATEGY_COLORS.get(name, _FALLBACK_COLOR)
 
 
 def _bar_flip_rate(summary: pd.DataFrame, eligible: int, path: Path) -> Path:

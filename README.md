@@ -33,15 +33,30 @@ python -m sharko check --example
 ```
 
 1. `train` teaches Sharko from the loan data. Run it once.
-2. `check --example` shows a full worked example. No typing needed.
+2. `check --example` shows a full worked example and saves a report in the `Reports` folder. No typing needed.
 
-Then try your own application. Sharko asks 11 short questions and shows the allowed answers under each one. Press Ctrl+C to quit.
+Then try your own application. Sharko asks for your first and last name, then 11 short questions, and shows the allowed answers under each one. Press Ctrl+C to quit.
 
 ```
 python -m sharko check
 ```
 
 Stuck? `python -m sharko tutorial` prints a step-by-step guide, and `python -m sharko` on its own shows the quick start.
+
+## Your report
+
+Every `check` saves an HTML report on its own, so there is nothing extra to run. Look in the `Reports` folder inside the Sharko folder for `FirstName_LastName_Results.html`. The terminal prints the folder and file name when it is saved, and asks if you want to open it. Add `--open` to open it automatically.
+
+The report is one file you can open in any browser or send to a teammate. It holds:
+
+- all the answers you submitted
+- the result and the smallest change that would be approved
+- how Sharko found it, in 4 plain steps
+- the three ways compared
+- every try the search made, with a small chart of the approval chance at each try
+- the model's quality scores, the limits and the disclaimer
+
+Running `check` again with the same name saves a new file ending in `_2`, `_3` and so on, so nothing is overwritten. The report contains names and financial details, so `Reports/` is git-ignored. Names are only used for the report. They are not given to the model and not written to the history log.
 
 ## Reading the result
 
@@ -67,7 +82,7 @@ python -m sharko experiment
 python -m sharko report --open
 ```
 
-`report` writes four charts and one page, `outputs/report.html`, that holds all of them with a plain-language caption each. You can send that single file to a teammate. The charts follow the paper's proposed visualizations:
+`report` writes four charts and one page, `Reports/Experiment_Report.html`, that holds all of them with a plain-language caption each. You can send that single file to a teammate. The charts follow the paper's proposed visualizations:
 
 - Prediction-flip rate by strategy (bar chart)
 - Minimum normalized distance by strategy (box plot)
@@ -81,8 +96,8 @@ Without `--open`, `report` only writes the files.
 | Command | What it does |
 | --- | --- |
 | `python -m sharko train` | Teach Sharko from the loan data (run once) |
-| `python -m sharko check` | Check one application, answering questions |
-| `python -m sharko check --example` | Check a built-in sample application |
+| `python -m sharko check` | Check one application and save your report in `Reports` |
+| `python -m sharko check --example` | Check a built-in sample application (also saves a report) |
 | `python -m sharko history` | List your earlier checks |
 | `python -m sharko tutorial` | Step-by-step guide |
 | `python -m sharko evaluate` | Show how accurate the saved model is |
@@ -99,7 +114,8 @@ These folders are generated and git-ignored.
 
 - `artifacts/model.joblib` - the trained model
 - `artifacts/history.jsonl` - a log of your checks (write-only, it never changes a result)
-- `outputs/` - `experiment_results.csv`, `summary.csv`, `paired_comparison.csv`, the charts (`.png`) and the dashboard (`report.html`)
+- `Reports/` - your reports (`FirstName_LastName_Results.html`) and the charts page (`Experiment_Report.html`)
+- `outputs/` - `experiment_results.csv`, `summary.csv`, `paired_comparison.csv` and the charts (`.png`)
 
 ## For analysts
 

@@ -145,3 +145,77 @@ def test_intro_is_short_ascii_and_explains_the_check():
     assert "11 short questions" in text and "Ctrl+C" in text
     assert "300,000" in text and "39,500,000" in text
     assert len(text.splitlines()) <= 22
+
+
+from sharko.intake import (  # noqa: E402
+    collect_name,
+    report_filename,
+    unique_report_path,
+)
+
+
+@pytest.mark.parametrize(
+    "first, last, expected",
+    [
+        ("Angelo", "Laus", "Angelo_Laus_Results.html"),
+        ("Angelo John", "Laus", "Angelo_John_Laus_Results.html"),
+        ("Jose", "Pena", "Jose_Pena_Results.html"),
+        ("José", "Peña", "Jose_Pena_Results.html"),
+        ("Mary-Ann", "O'Brien", "Mary-Ann_OBrien_Results.html"),
+        ("  Ana  ", "de   la Cruz", "Ana_de_la_Cruz_Results.html"),
+        ("李", "王", "Unnamed_Unnamed_Results.html"),
+    ],
+)
+def test_report_filename_is_safe_and_ascii(first, last, expected):
+    assert report_filename(first, last) == expected
+
+
+def test_unique_report_path_never_overwrites(tmp_path):
+    first = unique_report_path(tmp_path, "Ana_Cruz_Results.html")
+    assert first.name == "Ana_Cruz_Results.html"
+    first.write_text("x", encoding="utf-8")
+    second = unique_report_path(tmp_path, "Ana_Cruz_Results.html")
+    assert second.name == "Ana_Cruz_Results_2.html"
+    second.write_text("x", encoding="utf-8")
+    assert unique_report_path(tmp_path, "Ana_Cruz_Results.html").name == "Ana_Cruz_Results_3.html"
+
+
+def test_collect_name_asks_and_reprompts_invalid_answers():
+    answers = iter(["", "R2D2", "Ana Maria", "123", "dela Cruz"])
+    out = []
+    names = collect_name(None, None, input_fn=lambda _: next(answers), output_fn=out.append)
+    assert names == ("Ana Maria", "dela Cruz")
+    assert any("First name" in line and "letters" in line for line in out)
+
+
+def test_collect_name_uses_given_values_and_asks_only_for_the_missing_one():
+    answers = iter(["Cruz"])
+    asked = []
+    names = collect_name(
+        "Ana", None, input_fn=lambda prompt: (asked.append(prompt), next(answers))[1],
+        output_fn=lambda _: None,
+    )
+    assert names == ("Ana", "Cruz") and len(asked) == 1 and "Last name" in asked[0]
+
+
+def test_collect_name_non_interactive_defaults_and_validates():
+    assert collect_name(None, None, interactive=False) == ("Unnamed", "Applicant")
+    assert collect_name("Ana", None, interactive=False) == ("Ana", "Applicant")
+    with pytest.raises(IntakeError):
+        collect_name("R2D2", "x", interactive=False)
+
+
+def test_collect_name_rejects_very_long_names():
+    with pytest.raises(IntakeError):
+        collect_name("A" * 41, "Cruz", interactive=False)
+
+
+def test_intro_can_be_skipped_by_the_caller():
+    out = []
+    answers = iter(["x"])
+    with pytest.raises(StopIteration):
+        collect_applicant(
+            {}, SPACE, input_fn=lambda _: next(answers), output_fn=out.append,
+            show_intro=False,
+        )
+    assert "SHARKO - loan what-if check" not in "\n".join(out)

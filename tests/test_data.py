@@ -1,6 +1,8 @@
 import pandas as pd
 import pytest
 
+from pathlib import Path
+
 from sharko.config import DEFAULT_DATA
 from sharko.data import derive_search_space, load_dataset, split_dataset
 
@@ -58,9 +60,12 @@ def test_search_space_uses_train_partition_only(synthetic_df):
     assert space.terms == tuple(sorted(train["loan_term"].unique()))
 
 
-@pytest.mark.skipif(not DEFAULT_DATA.exists(), reason="real dataset not present")
+REAL_DATA = Path(__file__).resolve().parents[1] / DEFAULT_DATA
+
+
+@pytest.mark.skipif(not REAL_DATA.exists(), reason="real dataset not present")
 def test_real_dataset_shape_and_split_sizes():
-    df = load_dataset(DEFAULT_DATA)
+    df = load_dataset(REAL_DATA)
     assert df.shape == (4269, 13)
     assert (df["loan_status"] == "Approved").sum() == 2656
     train, test = split_dataset(df)

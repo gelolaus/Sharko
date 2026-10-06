@@ -1,4 +1,7 @@
+import re
+import unicodedata
 from collections.abc import Callable, Mapping
+from pathlib import Path
 
 from sharko.config import FEATURES
 from sharko.data import SearchSpace
@@ -160,7 +163,76 @@ def validate_field(name: str, text: str, space: SearchSpace) -> int | str:
     raise IntakeError(f"unknown field {name}")
 
 
-def _print_intro(output_fn: Callable[[str], None], space: SearchSpace) -> None:
+NAME_MAX = 40
+
+
+def validate_name(label: str, text: str) -> str:
+    """Return a tidy name, or raise IntakeError if it is not a plain name."""
+    cleaned = " ".join(str(text).split())
+    valid = (
+        0 < len(cleaned) <= NAME_MAX
+        and all(char.isalpha() or char in " -'." for char in cleaned)
+        and any(char.isalpha() for char in cleaned)
+    )
+    if not valid:
+        raise IntakeError(
+            f"{label} must use letters, spaces, hyphens or apostrophes "
+            f"(1 to {NAME_MAX} characters)"
+        )
+    return cleaned
+
+
+def collect_name(
+    first: str | None,
+    last: str | None,
+    input_fn: Callable[[str], str] = input,
+    output_fn: Callable[[str], None] = print,
+    interactive: bool = True,
+) -> tuple[str, str]:
+    """Collect the first and last name used to title and name the report."""
+    result: list[str] = []
+    for label, given, default in (
+        ("First name", first, "Unnamed"),
+        ("Last name", last, "Applicant"),
+    ):
+        if given is not None:
+            result.append(validate_name(label, given))
+        elif not interactive:
+            result.append(default)
+        else:
+            while True:
+                entered = input_fn(f"{label} (used to name your report file)\n> ")
+                try:
+                    result.append(validate_name(label, entered))
+                    break
+                except IntakeError as exc:
+                    output_fn(f"  -> {exc}")
+    return result[0], result[1]
+
+
+def _file_part(name: str) -> str:
+    ascii_text = unicodedata.normalize("NFKD", name).encode("ascii", "ignore")
+    kept = re.sub(r"[^A-Za-z0-9\- ]", "", ascii_text.decode("ascii"))
+    return "_".join(kept.split()).strip("-_") or "Unnamed"
+
+
+def report_filename(first: str, last: str) -> str:
+    """File name such as Ana_Cruz_Results.html: ASCII only, safe on Windows."""
+    return f"{_file_part(first)}_{_file_part(last)}_Results.html"
+
+
+def unique_report_path(directory: Path, filename: str) -> Path:
+    """Return a path in `directory` that does not exist yet (adds _2, _3, ...)."""
+    path = Path(directory) / filename
+    stem, suffix = path.stem, path.suffix
+    number = 2
+    while path.exists():
+        path = Path(directory) / f"{stem}_{number}{suffix}"
+        number += 1
+    return path
+
+
+def print_intro(output_fn: Callable[[str], None], space: SearchSpace) -> None:
     terms = ", ".join(str(term) for term in space.terms)
     lines = [
         "",
@@ -170,7 +242,8 @@ def _print_intro(output_fn: Callable[[str], None], space: SearchSpace) -> None:
         CURRENCY_NOTE,
         "",
         *wrap(
-            f"You will answer {len(INTAKE_FIELDS)} short questions about one "
+            "First, your name (it only names your report file). Then you "
+            f"will answer {len(INTAKE_FIELDS)} short questions about one "
             "loan application. Sharko asks a model if it would be approved. "
             "If not, Sharko looks for the smallest change to the loan amount "
             "or term that would be approved."
@@ -199,13 +272,14 @@ def collect_applicant(
     input_fn: Callable[[str], str] = input,
     output_fn: Callable[[str], None] = print,
     interactive: bool = True,
+    show_intro: bool = True,
 ) -> dict[str, int | str]:
     parsed: dict[str, int | str] = {}
     needs_prompt = any(
         name not in provided or provided[name] is None for name in INTAKE_FIELDS
     )
-    if interactive and needs_prompt:
-        _print_intro(output_fn, space)
+    if interactive and needs_prompt and show_intro:
+        print_intro(output_fn, space)
 
     total = len(INTAKE_FIELDS)
     for index, name in enumerate(INTAKE_FIELDS, start=1):

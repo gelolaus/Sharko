@@ -53,3 +53,9 @@ def trained_experiment(trained):
         == 0
     )
     return trained
+
+
+@pytest.fixture(autouse=True)
+def _run_in_a_scratch_folder(tmp_path, monkeypatch):
+    """Commands write a Reports/ folder in the working directory; keep it out of the repo."""
+    monkeypatch.chdir(tmp_path)

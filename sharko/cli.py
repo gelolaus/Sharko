@@ -8,12 +8,14 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
+from sharko.applicant_report import write_applicant_report
 from sharko.config import (
     APPROVED,
     DEFAULT_DATA,
     DEFAULT_HISTORY,
     DEFAULT_MODEL,
     DEFAULT_OUT,
+    DEFAULT_REPORTS,
     FEATURES,
     REJECTED,
 )
@@ -26,6 +28,10 @@ from sharko.intake import (
     INTAKE_FIELDS,
     IntakeError,
     collect_applicant,
+    collect_name,
+    print_intro,
+    report_filename,
+    unique_report_path,
 )
 from sharko.messages import (
     CURRENCY_NOTE,
@@ -47,6 +53,7 @@ from sharko.plain import WIDTH, chance, heading, wrap
 from sharko.render import PLAIN_WAYS, STRATEGY_LABELS, format_check_result
 from sharko.report import generate_report
 from sharko.search import Strategy, run_all_strategies
+from sharko.trace import build_trace
 
 RESULTS_NAME = "experiment_results.csv"
 
@@ -259,11 +266,23 @@ def _check(args: argparse.Namespace) -> int:
             "its flag, for example --cibil-score 800."
         ):
             print(line)
+    interactive = not args.no_prompt
+    space = bundle.search_space
     try:
+        if interactive and any(value is None for value in provided.values()):
+            print_intro(print, space)
+        first, last = collect_name(
+            args.first_name or ("Example" if args.example else None),
+            args.last_name or ("Applicant" if args.example else None),
+            input_fn=input,
+            interactive=interactive and not args.example,
+        )
         applicant = collect_applicant(
             provided,
-            bundle.search_space,
-            interactive=not args.no_prompt,
+            space,
+            input_fn=input,
+            interactive=interactive,
+            show_intro=False,
         )
     except IntakeError as exc:
         hint = ""
@@ -289,6 +308,8 @@ def _check(args: argparse.Namespace) -> int:
             bundle.search_space,
         )
         strategies = None
+        results = None
+        trace = None
         status = APPROVED
     else:
         print(
@@ -309,7 +330,11 @@ def _check(args: argparse.Namespace) -> int:
         )
         strategies = [results[strategy].as_dict() for strategy in Strategy]
         status = REJECTED
+        trace = build_trace(applicant, scorer, bundle.search_space, results)
     print(text)
+    _save_report(
+        args, (first, last), applicant, baseline_score, results, trace, bundle
+    )
     HistoryLog(Path(args.history)).append(
         {
             "source": "example" if args.example else "interactive",
@@ -320,6 +345,56 @@ def _check(args: argparse.Namespace) -> int:
         }
     )
     return 0
+
+
+def _save_report(args, names, applicant, baseline_score, results, trace, bundle) -> None:
+    """Write the per-person HTML report, say where it is, and optionally open it."""
+    first, last = names
+    folder = Path(args.reports_dir)
+    try:
+        path = write_applicant_report(
+            unique_report_path(folder, report_filename(first, last)),
+            first,
+            last,
+            applicant,
+            baseline_score,
+            results,
+            trace,
+            bundle.test_metrics,
+            bundle.search_space,
+        )
+    except OSError as exc:
+        print(f"Could not save the report: {exc}", file=sys.stderr)
+        return
+    for line in heading("REPORT SAVED"):
+        print(line)
+    for line in wrap(
+        "Your report has your answers, the result, and every try the search "
+        "made, step by step.",
+        indent=2,
+    ):
+        print(line)
+    print(f"  Folder: {path.parent.resolve()}")
+    print(f"  File:   {path.name}")
+    print("  Open it by double-clicking the file, or in any web browser.")
+    asks = not args.no_prompt and not args.example
+    if args.open:
+        _open_page(path)
+    elif asks:
+        try:
+            answer = input("Open it in your browser now? (y/n) ")
+        except (EOFError, KeyboardInterrupt):
+            answer = "n"
+        if answer.strip().lower() in {"y", "yes"}:
+            _open_page(path)
+    else:
+        print("  Tip: add --open to open it automatically next time.")
+
+
+def _open_page(path: Path) -> None:
+    print("Opening the report in your browser...")
+    if not webbrowser.open(path.resolve().as_uri()):
+        print(f"Could not open a browser. Open this file yourself: {path}")
 
 
 def _closest_logged(record: dict) -> str | None:
@@ -377,7 +452,6 @@ def _history(args: argparse.Namespace) -> int:
 
 
 _REPORT_FILES = {
-    "report.html": "all charts on one page (open it in a browser)",
     "summary.csv": "one row per way, with all the averages",
     "paired_comparison.csv": "ways compared on the loans both could fix",
     "flip_rate_by_strategy.png": "how often each way found an approved option",
@@ -395,19 +469,21 @@ def _report(args: argparse.Namespace) -> int:
     _banner("Report")
     print("Writing summary tables and figures...")
     results = pd.read_csv(results_path, encoding="utf-8")
-    paths = generate_report(results, out)
-    print(f"Saved in {out}:")
+    reports_dir = Path(args.reports_dir)
+    paths = generate_report(results, out, reports_dir=reports_dir)
+    print(f"Tables and charts saved in {out}:")
+    page = reports_dir / "Experiment_Report.html"
     for path in paths:
-        print(f"  {path.name}")
-        meaning = _REPORT_FILES.get(path.name)
-        if meaning:
-            print(f"      {meaning}")
-    page = out / "report.html"
+        if path != page:
+            print(f"  {path.name}")
+            meaning = _REPORT_FILES.get(path.name)
+            if meaning:
+                print(f"      {meaning}")
     print("")
+    print(f"All charts on one page (open it in a browser), saved in {reports_dir}:")
+    print(f"  {page.name}")
     if args.open:
-        print("Opening the dashboard in your browser...")
-        if not webbrowser.open(page.resolve().as_uri()):
-            print(f"Could not open a browser. Open this file yourself: {page}")
+        _open_page(page)
     else:
         print("To see the charts: python -m sharko report --open")
     return 0
@@ -507,6 +583,19 @@ def build_parser() -> argparse.ArgumentParser:
         default=DEFAULT_HISTORY,
         help="append-only JSONL log path",
     )
+    check.add_argument("--first-name", default=None, help="first name for the report title and file name")
+    check.add_argument("--last-name", default=None, help="last name for the report title and file name")
+    check.add_argument(
+        "--reports-dir",
+        type=Path,
+        default=DEFAULT_REPORTS,
+        help="folder for the HTML report (default: Reports)",
+    )
+    check.add_argument(
+        "--open",
+        action="store_true",
+        help="open the report in your browser when it is saved",
+    )
     check.add_argument(
         "--example",
         action="store_true",
@@ -547,6 +636,12 @@ def build_parser() -> argparse.ArgumentParser:
         type=Path,
         default=DEFAULT_OUT,
         help="directory containing experiment_results.csv",
+    )
+    report.add_argument(
+        "--reports-dir",
+        type=Path,
+        default=DEFAULT_REPORTS,
+        help="folder for the charts page (default: Reports)",
     )
     report.add_argument(
         "--open",

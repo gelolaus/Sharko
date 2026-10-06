@@ -8,7 +8,15 @@ from sharko.data import SearchSpace
 from sharko.intake import FIELD_TITLES, INTAKE_FIELDS
 from sharko.messages import CURRENCY_NOTE, DISCLAIMER, LIMITATIONS_NOTE
 from sharko.model import predicted_status
-from sharko.plain import PLAIN_WAYS, WIDTH, chance, heading, numbered, wrap
+from sharko.plain import (
+    PLAIN_WAYS,
+    WIDTH,
+    chance,
+    heading,
+    numbered,
+    search_steps,
+    wrap,
+)
 from sharko.search import SearchResult, Strategy
 
 # Technical names, used in the analyst section and in the history listing.
@@ -17,7 +25,7 @@ STRATEGY_LABELS = {
     Strategy.TERM_ONLY: "Term-only",
     Strategy.COMBINED: "Combined",
 }
-_CHANGE_TITLES = {
+CHANGE_TITLES = {
     Strategy.AMOUNT_ONLY: "Change the loan amount only:",
     Strategy.TERM_ONLY: "Change the loan term only:",
     Strategy.COMBINED: "Change both the amount and the term:",
@@ -31,7 +39,7 @@ _MONEY = {
     "bank_asset_value",
     "loan_amount",
 }
-_GLOSSARY = (
+GLOSSARY = (
     "approval score / chance: the model's estimate from 0 to 1, shown "
     "as a percent. 0.5 (50%) or more counts as approved.",
     "distance: how far an option is from the original amount and term. "
@@ -90,7 +98,7 @@ def _rejected_lines(
     results: Mapping[Strategy, SearchResult],
     space: SearchSpace,
 ) -> list[str]:
-    closest = _closest_flipped(results)
+    closest = closest_flipped(results)
     lines = heading("RESULT: Not approved as submitted")
     lines.extend(
         wrap(
@@ -120,7 +128,7 @@ def _rejected_lines(
 
 def _change_lines(closest: SearchResult, score: float) -> list[str]:
     lines = heading("SMALLEST CHANGE THAT WOULD BE APPROVED")
-    lines.append(f"  {_CHANGE_TITLES[closest.strategy]}")
+    lines.append(f"  {CHANGE_TITLES[closest.strategy]}")
     if closest.candidate_amount == closest.original_amount:
         amount = f"{closest.original_amount:,} INR (unchanged)"
     else:
@@ -148,21 +156,11 @@ def _change_lines(closest: SearchResult, score: float) -> list[str]:
 
 
 def _story_lines(closest: SearchResult | None) -> list[str]:
-    tries = ""
-    if closest is not None:
-        tries = (
-            f" For the closest way, that was try {closest.configurations_evaluated:,}."
-        )
-    steps = [
-        "Kept everything else about the applicant the same. Only the loan "
-        "amount and the loan term were allowed to change.",
-        "Listed the allowed amount and term options, closest to the "
-        "original request first.",
-        "Asked the model to score each option, one by one. Sharko stops "
-        f"at the first option with a {_CUTOFF} chance or more.{tries}",
-        "Did this 3 ways (amount only, term only, both) and compared them.",
+    tries = closest.configurations_evaluated if closest is not None else None
+    return [
+        *heading("HOW SHARKO FOUND THIS"),
+        *numbered(search_steps(_CUTOFF, tries)),
     ]
-    return [*heading("HOW SHARKO FOUND THIS"), *numbered(steps)]
 
 
 def _comparison_lines(
@@ -203,7 +201,7 @@ def _technical_lines(
     if results is not None:
         lines.append("Search results (all other fields stay fixed):")
         lines.extend(_strategy_lines(results))
-        closest = _closest_flipped(results)
+        closest = closest_flipped(results)
         if closest is not None:
             lines.append(
                 f"Closest by distance: {STRATEGY_LABELS[closest.strategy]}"
@@ -232,7 +230,7 @@ def _technical_lines(
             ]
         )
     lines.append("Words used:")
-    glossary = _GLOSSARY if results is not None else (_GLOSSARY[0], _GLOSSARY[3])
+    glossary = GLOSSARY if results is not None else (GLOSSARY[0], GLOSSARY[3])
     for entry in glossary:
         lines.extend(wrap(f"- {entry}", indent=2, hang=2))
     return lines
@@ -274,7 +272,7 @@ def _strategy_lines(results: Mapping[Strategy, SearchResult]) -> list[str]:
     return lines
 
 
-def _closest_flipped(
+def closest_flipped(
     results: Mapping[Strategy, SearchResult],
 ) -> SearchResult | None:
     closest: SearchResult | None = None

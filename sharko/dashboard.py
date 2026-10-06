@@ -37,7 +37,7 @@ _CAPTIONS = {
     ),
 }
 
-_CSS = """
+PAGE_CSS = """
 :root {
   --bg: #ffffff; --fg: #1b1f24; --muted: #57606a; --line: #d0d7de;
   --card: #f6f8fa; --accent: #0969da;
@@ -164,7 +164,7 @@ def write_dashboard(
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Sharko results dashboard</title>
-<style>{_CSS}</style>
+<style>{PAGE_CSS}</style>
 </head>
 <body>
 <main>
@@ -192,7 +192,7 @@ change the amount only, the term only, or both.</p>
 <p class="notes">{html.escape(DISCLAIMER)}</p>
 <p class="notes">{html.escape(LIMITATIONS_NOTE)}</p>
 
-<footer>Made by python -m sharko report. Files saved next to this page: summary.csv, paired_comparison.csv and the chart images.</footer>
+<footer>Made by python -m sharko report. The tables (summary.csv, paired_comparison.csv) and the chart images are saved in the outputs folder.</footer>
 </main>
 </body>
 </html>

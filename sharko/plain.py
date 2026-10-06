@@ -20,6 +20,22 @@ def plain_way(name: str) -> str:
         return str(name)
 
 
+def search_steps(cutoff: str, tries: int | None) -> list[str]:
+    """The four plain-language steps behind a what-if search."""
+    detail = ""
+    if tries is not None:
+        detail = f" For the closest way, that was try {tries:,}."
+    return [
+        "Kept everything else about the applicant the same. Only the loan "
+        "amount and the loan term were allowed to change.",
+        "Listed the allowed amount and term options, closest to the "
+        "original request first.",
+        "Asked the model to score each option, one by one. Sharko stops "
+        f"at the first option with a {cutoff} chance or more.{detail}",
+        "Did this 3 ways (amount only, term only, both) and compared them.",
+    ]
+
+
 def chance(score: float) -> str:
     """Show a 0-1 score as a percent, never rounding across the 50% cut-off."""
     score = float(score)

@@ -68,7 +68,7 @@ def test_check_result_is_independent_of_existing_history(trained, tmp_path, caps
                 *ARGS_LOW_CIBIL_LONG_TERM,
             ]
         )
-        return capsys.readouterr().out
+        return capsys.readouterr().out.split("REPORT SAVED")[0]
 
     empty = run(tmp_path / "a.jsonl")
     (tmp_path / "b.jsonl").write_text('{"junk": 1}\n', encoding="utf-8")
