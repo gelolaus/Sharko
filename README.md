@@ -58,6 +58,24 @@ The result is built to be read from the top, and you can stop early.
 
 A bigger loan can come out as "approved". That only reflects patterns in the past data. It does not mean a bigger loan is safer.
 
+## See the charts
+
+Run the experiment once, then open the dashboard. Both commands work from the terminal and the charts open in your browser.
+
+```
+python -m sharko experiment
+python -m sharko report --open
+```
+
+`report` writes four charts and one page, `outputs/report.html`, that holds all of them with a plain-language caption each. You can send that single file to a teammate. The charts follow the paper's proposed visualizations:
+
+- Prediction-flip rate by strategy (bar chart)
+- Minimum normalized distance by strategy (box plot)
+- Configurations evaluated by strategy (box plot, log scale; shows how many loans found an option and how many tried every option)
+- Original vs. prediction-flipping loan amount (scatter plot)
+
+Without `--open`, `report` only writes the files.
+
 ## Commands
 
 | Command | What it does |
@@ -69,7 +87,7 @@ A bigger loan can come out as "approved". That only reflects patterns in the pas
 | `python -m sharko tutorial` | Step-by-step guide |
 | `python -m sharko evaluate` | Show how accurate the saved model is |
 | `python -m sharko experiment` | For analysts: run the search on many test loans |
-| `python -m sharko report` | For analysts: draw charts and tables from the experiment |
+| `python -m sharko report --open` | For analysts: draw the charts and open the dashboard in your browser |
 
 Every command accepts `--help`. To skip the questions, pass every answer as a flag with `check --no-prompt`. See `python -m sharko check --help` for the flag names.
 
@@ -81,7 +99,7 @@ These folders are generated and git-ignored.
 
 - `artifacts/model.joblib` - the trained model
 - `artifacts/history.jsonl` - a log of your checks (write-only, it never changes a result)
-- `outputs/` - `experiment_results.csv`, `summary.csv`, `paired_comparison.csv` and the charts (`.png`)
+- `outputs/` - `experiment_results.csv`, `summary.csv`, `paired_comparison.csv`, the charts (`.png`) and the dashboard (`report.html`)
 
 ## For analysts
 

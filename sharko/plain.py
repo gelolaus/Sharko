@@ -1,6 +1,23 @@
 import textwrap
 
+from sharko.search import Strategy
+
 WIDTH = 72
+
+# Everyday names for the three search strategies.
+PLAIN_WAYS = {
+    Strategy.AMOUNT_ONLY: "Amount only",
+    Strategy.TERM_ONLY: "Term only",
+    Strategy.COMBINED: "Amount and term",
+}
+
+
+def plain_way(name: str) -> str:
+    """Everyday name for a strategy value such as 'amount_only'."""
+    try:
+        return PLAIN_WAYS[Strategy(name)]
+    except ValueError:
+        return str(name)
 
 
 def chance(score: float) -> str:

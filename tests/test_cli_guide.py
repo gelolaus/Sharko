@@ -159,3 +159,28 @@ def test_example_outside_a_custom_model_grid_explains_the_override(
         capsys,
     )
     assert code == 2 and "built-in example" in err and "flag" in err
+
+
+@pytest.fixture
+def browser_calls(monkeypatch):
+    calls = []
+    monkeypatch.setattr(cli.webbrowser, "open", lambda url, *a, **k: calls.append(url) or True)
+    return calls
+
+
+def test_report_lists_the_dashboard_and_never_opens_it_by_default(
+    trained_experiment, capsys, browser_calls
+):
+    code, out, _ = run(["report", "--out", str(trained_experiment.out)], capsys)
+    assert code == 0 and browser_calls == []
+    assert "report.html" in out and "report --open" in out
+    assert (trained_experiment.out / "report.html").is_file()
+
+
+def test_report_open_flag_opens_the_dashboard_once(
+    trained_experiment, capsys, browser_calls
+):
+    code, out, _ = run(["report", "--open", "--out", str(trained_experiment.out)], capsys)
+    assert code == 0 and len(browser_calls) == 1
+    assert browser_calls[0].startswith("file:") and browser_calls[0].endswith("report.html")
+    assert "Opening" in out

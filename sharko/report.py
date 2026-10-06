@@ -8,8 +8,12 @@ matplotlib.use("Agg")
 
 import matplotlib.pyplot as plt
 import pandas as pd
+from matplotlib.lines import Line2D
+from matplotlib.ticker import FuncFormatter
 
+from sharko.dashboard import FIGURE_TITLES, write_dashboard
 from sharko.experiment import paired_comparison, summarize
+from sharko.plain import plain_way
 from sharko.search import Strategy
 
 FOOTNOTE = "Model-based what-if results; not lender decisions."
@@ -22,11 +26,24 @@ _PAIRS: tuple[tuple[Strategy, Strategy], ...] = (
 
 _AMOUNT_STRATEGIES = (Strategy.AMOUNT_ONLY.value, Strategy.COMBINED.value)
 
+# Colour-blind-safe palette (Okabe-Ito). Values are always printed too,
+# so colour never carries the meaning alone.
+_COLORS = {
+    Strategy.AMOUNT_ONLY.value: "#0072B2",
+    Strategy.TERM_ONLY.value: "#E69F00",
+    Strategy.COMBINED.value: "#009E73",
+}
+_FALLBACK_COLOR = "#999999"
+_FIGSIZE = (7.5, 5.0)
+_DPI = 150
+
 
 def generate_report(results: pd.DataFrame, out_dir: Path) -> list[Path]:
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
     written: list[Path] = []
+    figures: dict[str, Path] = {}
+    eligible = _eligible_count(results)
 
     summary = summarize(results)
     summary_path = out_dir / "summary.csv"
@@ -39,34 +56,30 @@ def generate_report(results: pd.DataFrame, out_dir: Path) -> list[Path]:
     )
     written.append(paired_path)
 
-    written.append(
-        _bar_flip_rate(summary, out_dir / "flip_rate_by_strategy.png")
+    figures["flip_rate"] = _bar_flip_rate(
+        summary, eligible, out_dir / "flip_rate_by_strategy.png"
     )
-    written.append(
-        _box_by_strategy(
-            results,
-            out_dir / "distance_by_strategy.png",
-            column="normalized_distance",
-            title="Normalized distance by strategy",
-            flipped_only=True,
-        )
+    figures["distance"] = _box_distance(
+        results, eligible, out_dir / "distance_by_strategy.png"
     )
-    written.append(
-        _box_by_strategy(
-            results,
-            out_dir / "configs_evaluated_by_strategy.png",
-            column="configurations_evaluated",
-            title="Configurations evaluated by strategy",
-            flipped_only=False,
-        )
+    figures["configs"] = _box_configs(
+        results, eligible, out_dir / "configs_evaluated_by_strategy.png"
     )
-
     amount_flips = _amount_flips(results)
     if len(amount_flips) > 0:
-        written.append(
-            _scatter_amounts(amount_flips, out_dir / "amount_original_vs_flip.png")
+        figures["scatter"] = _scatter_amounts(
+            amount_flips, eligible, out_dir / "amount_original_vs_flip.png"
         )
+    written.extend(figures.values())
+
+    written.append(
+        write_dashboard(summary, eligible, figures, out_dir / "report.html")
+    )
     return written
+
+
+def _eligible_count(results: pd.DataFrame) -> int:
+    return int(results["loan_id"].nunique()) if len(results) else 0
 
 
 def _paired_table(results: pd.DataFrame) -> pd.DataFrame:
@@ -96,43 +109,104 @@ def _values_for(
     return pd.to_numeric(group[column], errors="coerce").dropna()
 
 
-def _bar_flip_rate(summary: pd.DataFrame, path: Path) -> Path:
-    fig, ax = plt.subplots(figsize=(6.5, 4.5))
-    labels = [str(name) for name in summary.index]
-    ax.bar(labels, summary["flip_rate_pct"].tolist())
-    ax.set_xlabel("strategy")
-    ax.set_ylabel("flip_rate_pct")
-    return _finish(fig, ax, "Flip rate by strategy", path)
+def _color(name: str) -> str:
+    return _COLORS.get(name, _FALLBACK_COLOR)
 
 
-def _box_by_strategy(
-    results: pd.DataFrame,
-    path: Path,
-    column: str,
-    title: str,
-    flipped_only: bool,
-) -> Path:
-    fig, ax = plt.subplots(figsize=(6.5, 4.5))
-    data: list[pd.Series] = []
-    labels: list[str] = []
+def _bar_flip_rate(summary: pd.DataFrame, eligible: int, path: Path) -> Path:
+    fig, ax = plt.subplots(figsize=_FIGSIZE)
+    names = [str(name) for name in summary.index]
+    rates = [float(rate) for rate in summary["flip_rate_pct"]]
+    heights = [0.0 if pd.isna(rate) else rate for rate in rates]
+    bars = ax.bar(
+        [plain_way(name) for name in names],
+        heights,
+        color=[_color(name) for name in names],
+        edgecolor="black",
+    )
+    for bar, rate, (_, row) in zip(bars, rates, summary.iterrows()):
+        if pd.isna(rate):
+            continue
+        ax.annotate(
+            f"{rate:.1f}%\n({int(row['flips'])} of {int(row['eligible'])})",
+            xy=(bar.get_x() + bar.get_width() / 2, bar.get_height()),
+            xytext=(0, 4),
+            textcoords="offset points",
+            ha="center",
+            va="bottom",
+        )
+    ax.set_ylim(0, 118)
+    ax.set_yticks(range(0, 101, 20))
+    ax.set_xlabel("Way of changing the loan")
+    ax.set_ylabel("Eligible loans with an approved option found (%)")
+    _note_sample(fig, eligible)
+    return _finish(fig, ax, FIGURE_TITLES["flip_rate"], path)
+
+
+def _box_distance(results: pd.DataFrame, eligible: int, path: Path) -> Path:
+    fig, ax = plt.subplots(figsize=_FIGSIZE)
+    names, data = [], []
     for name in _strategy_names(results):
-        values = _values_for(results, name, column, flipped_only)
+        values = _values_for(results, name, "normalized_distance", True)
         if len(values) == 0:
             continue
-        labels.append(name)
+        names.append(name)
         data.append(values)
     if data:
-        _draw_boxes(ax, data, labels)
-    ax.set_xlabel("strategy")
-    ax.set_ylabel(column)
-    return _finish(fig, ax, title, path)
+        labels = [
+            f"{plain_way(name)}\n(n = {len(values)})"
+            for name, values in zip(names, data)
+        ]
+        _draw_boxes(ax, data, labels, names)
+    else:
+        ax.text(0.5, 0.5, "No approved option was found", ha="center", va="center",
+                transform=ax.transAxes)
+        ax.set_xticks([])
+    ax.set_xlabel("Way of changing the loan (n = loans where an option was found)")
+    ax.set_ylabel("Normalized distance (0 = no change)")
+    _note_sample(fig, eligible)
+    return _finish(fig, ax, FIGURE_TITLES["distance"], path)
 
 
-def _draw_boxes(ax: plt.Axes, data: list[pd.Series], labels: list[str]) -> None:
+def _box_configs(results: pd.DataFrame, eligible: int, path: Path) -> Path:
+    fig, ax = plt.subplots(figsize=_FIGSIZE)
+    names, data, labels = [], [], []
+    for name in _strategy_names(results):
+        values = _values_for(results, name, "configurations_evaluated", False)
+        if len(values) == 0:
+            continue
+        group = results.loc[results["strategy"] == name]
+        found = int(group["flip_found"].eq(True).sum())
+        names.append(name)
+        data.append(values.clip(lower=1))
+        labels.append(
+            f"{plain_way(name)}\nfound: {found}\nsearched all: {len(group) - found}"
+        )
+    if data:
+        _draw_boxes(ax, data, labels, names)
+        ax.set_yscale("log")
+        ax.yaxis.set_major_formatter(FuncFormatter(lambda v, _: f"{v:,.0f}"))
+    else:
+        ax.set_xticks([])
+    ax.set_xlabel("Way of changing the loan")
+    ax.set_ylabel("Options tried before stopping (log scale)")
+    _note_sample(fig, eligible)
+    return _finish(fig, ax, FIGURE_TITLES["configs"], path)
+
+
+def _draw_boxes(
+    ax: plt.Axes, data: list[pd.Series], labels: list[str], names: list[str]
+) -> None:
     try:
-        ax.boxplot(data, tick_labels=labels)
+        parts = ax.boxplot(data, tick_labels=labels, patch_artist=True)
     except TypeError:
-        ax.boxplot(data, labels=labels)
+        parts = ax.boxplot(data, labels=labels, patch_artist=True)
+    for box, name in zip(parts["boxes"], names):
+        box.set_facecolor(_color(name))
+        box.set_alpha(0.75)
+    for median in parts["medians"]:
+        median.set_color("black")
+        median.set_linewidth(1.6)
 
 
 def _amount_flips(results: pd.DataFrame) -> pd.DataFrame:
@@ -141,18 +215,52 @@ def _amount_flips(results: pd.DataFrame) -> pd.DataFrame:
     return results.loc[flipped & changes_amount]
 
 
-def _scatter_amounts(flips: pd.DataFrame, path: Path) -> Path:
-    fig, ax = plt.subplots(figsize=(6.5, 4.5))
-    ax.scatter(flips["original_amount"], flips["candidate_amount"])
-    ax.set_xlabel("original_amount")
-    ax.set_ylabel("candidate_amount")
-    return _finish(fig, ax, "Original vs flipped loan amount", path)
+def _scatter_amounts(flips: pd.DataFrame, eligible: int, path: Path) -> Path:
+    fig, ax = plt.subplots(figsize=_FIGSIZE)
+    markers = {Strategy.AMOUNT_ONLY.value: "o", Strategy.COMBINED.value: "s"}
+    handles = []
+    # Draw the many Combined dots first so the few Amount-only dots stay visible on top.
+    for layer, name in enumerate(reversed(_AMOUNT_STRATEGIES), start=2):
+        group = flips.loc[flips["strategy"] == name]
+        if len(group) == 0:
+            continue
+        ax.scatter(
+            group["original_amount"] / 1e6,
+            group["candidate_amount"] / 1e6,
+            color=_color(name),
+            marker=markers[name],
+            s=28 + 22 * (layer - 2),
+            alpha=0.55 + 0.4 * (layer - 2),
+            edgecolors="black",
+            linewidths=0.4,
+            zorder=layer,
+        )
+        handles.insert(
+            0,
+            Line2D([], [], color=_color(name), marker=markers[name], linestyle="",
+                   markeredgecolor="black", label=plain_way(name)),
+        )
+    low = float(min(flips["original_amount"].min(), flips["candidate_amount"].min())) / 1e6
+    high = float(max(flips["original_amount"].max(), flips["candidate_amount"].max())) / 1e6
+    ax.plot([low, high], [low, high], linestyle="--", color="#555555", linewidth=1)
+    handles.append(
+        Line2D([], [], color="#555555", linestyle="--", label="no change in amount")
+    )
+    ax.legend(handles=handles, loc="upper left")
+    ax.set_xlabel("Original loan amount (million INR)")
+    ax.set_ylabel("Amount in the approved option (million INR)")
+    _note_sample(fig, eligible)
+    return _finish(fig, ax, FIGURE_TITLES["scatter"], path)
+
+
+def _note_sample(fig: plt.Figure, eligible: int) -> None:
+    fig.text(0.5, 0.05, f"n = {eligible} eligible loans", ha="center", fontsize=9)
 
 
 def _finish(fig: plt.Figure, ax: plt.Axes, title: str, path: Path) -> Path:
     ax.set_title(title)
     fig.text(0.5, 0.01, FOOTNOTE, ha="center", fontsize=8)
-    fig.tight_layout(rect=(0, 0.06, 1, 1))
-    fig.savefig(path)
+    fig.tight_layout(rect=(0, 0.09, 1, 1))
+    fig.savefig(path, dpi=_DPI)
     plt.close(fig)
     return path

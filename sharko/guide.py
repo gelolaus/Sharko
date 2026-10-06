@@ -100,7 +100,7 @@ def tutorial() -> str:
         _RULE,
         "  python -m sharko evaluate    How accurate the model is",
         "  python -m sharko experiment  Run the what-if search on many loans",
-        "  python -m sharko report      Draw charts from the experiment",
+        "  python -m sharko report --open   Draw the charts and open them",
         "",
         "Troubleshooting",
         _RULE,

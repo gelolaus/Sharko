@@ -8,7 +8,7 @@ from sharko.data import SearchSpace
 from sharko.intake import FIELD_TITLES, INTAKE_FIELDS
 from sharko.messages import CURRENCY_NOTE, DISCLAIMER, LIMITATIONS_NOTE
 from sharko.model import predicted_status
-from sharko.plain import WIDTH, chance, heading, numbered, wrap
+from sharko.plain import PLAIN_WAYS, WIDTH, chance, heading, numbered, wrap
 from sharko.search import SearchResult, Strategy
 
 # Technical names, used in the analyst section and in the history listing.
@@ -16,12 +16,6 @@ STRATEGY_LABELS = {
     Strategy.AMOUNT_ONLY: "Amount-only",
     Strategy.TERM_ONLY: "Term-only",
     Strategy.COMBINED: "Combined",
-}
-# Everyday names, used in the plain-language sections.
-PLAIN_WAYS = {
-    Strategy.AMOUNT_ONLY: "Amount only",
-    Strategy.TERM_ONLY: "Term only",
-    Strategy.COMBINED: "Amount and term",
 }
 _CHANGE_TITLES = {
     Strategy.AMOUNT_ONLY: "Change the loan amount only:",

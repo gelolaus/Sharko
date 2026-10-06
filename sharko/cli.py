@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import sys
+import webbrowser
 from pathlib import Path
 
 import numpy as np
@@ -190,7 +191,7 @@ def _experiment(args: argparse.Namespace) -> int:
     print(f"Eligible loans: {eligible}")
     _print_experiment_table(summarize(results))
     print(f"Full results saved to {out / RESULTS_NAME}")
-    _print_next("report   (draws charts and tables)")
+    _print_next("report --open")
     print("")
     print("IMPORTANT")
     print("-" * WIDTH)
@@ -376,6 +377,7 @@ def _history(args: argparse.Namespace) -> int:
 
 
 _REPORT_FILES = {
+    "report.html": "all charts on one page (open it in a browser)",
     "summary.csv": "one row per way, with all the averages",
     "paired_comparison.csv": "ways compared on the loans both could fix",
     "flip_rate_by_strategy.png": "how often each way found an approved option",
@@ -400,6 +402,14 @@ def _report(args: argparse.Namespace) -> int:
         meaning = _REPORT_FILES.get(path.name)
         if meaning:
             print(f"      {meaning}")
+    page = out / "report.html"
+    print("")
+    if args.open:
+        print("Opening the dashboard in your browser...")
+        if not webbrowser.open(page.resolve().as_uri()):
+            print(f"Could not open a browser. Open this file yourself: {page}")
+    else:
+        print("To see the charts: python -m sharko report --open")
     return 0
 
 
@@ -537,6 +547,11 @@ def build_parser() -> argparse.ArgumentParser:
         type=Path,
         default=DEFAULT_OUT,
         help="directory containing experiment_results.csv",
+    )
+    report.add_argument(
+        "--open",
+        action="store_true",
+        help="open the dashboard (report.html) in your browser",
     )
     report.set_defaults(func=_report)
 
