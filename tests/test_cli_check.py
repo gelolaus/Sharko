@@ -1,6 +1,6 @@
 from sharko.cli import main
 from sharko.history import HistoryLog
-from sharko.messages import DISCLAIMER
+from sharko.messages import CURRENCY_NOTE, DISCLAIMER
 from tests.frames import ARGS_APPROVED, ARGS_LOW_CIBIL_LONG_TERM
 
 
@@ -22,6 +22,7 @@ def test_check_rejected_application_finds_term_flip_and_logs(trained, tmp_path, 
     )
     out = capsys.readouterr().out
     assert "Term-only: " in out and "configurations evaluated:" in out and DISCLAIMER in out
+    assert CURRENCY_NOTE in out
     record = HistoryLog(history).read()[0]
     assert (
         record["source"] == "interactive"

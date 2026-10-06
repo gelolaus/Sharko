@@ -1,14 +1,18 @@
 from pathlib import Path
 
+# Both notes are hard-wrapped to fit 72 columns so every screen prints them whole.
 DISCLAIMER = (
-    "Model-generated what-if result. This is not a lender decision, "
+    "Model-generated what-if result. This is not a lender decision,\n"
     "a loan offer, or financial advice."
 )
 LIMITATIONS_NOTE = (
-    "Limitations: the model reflects patterns in a public dataset that lacks "
-    "economic variables (e.g. inflation, interest rates) and demographic detail; "
-    "a missing flip means none was found within the searched amounts and terms, "
-    "not that none exists."
+    "Limitations: the model reflects patterns in a public dataset that\n"
+    "lacks economic variables (e.g. inflation, interest rates) and\n"
+    "demographic detail. If no approved option is found, that means none\n"
+    "was found within the searched amounts and terms, not that none exists."
+)
+CURRENCY_NOTE = (
+    "The amounts used here are in Indian Rupees (INR)."
 )
 
 

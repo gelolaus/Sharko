@@ -18,9 +18,16 @@ from sharko.config import (
 )
 from sharko.data import load_dataset, split_dataset
 from sharko.experiment import run_experiment, summarize
+from sharko.guide import start_screen, tutorial
 from sharko.history import HistoryLog
-from sharko.intake import INTAKE_FIELDS, IntakeError, collect_applicant
+from sharko.intake import (
+    EXAMPLE_APPLICANT,
+    INTAKE_FIELDS,
+    IntakeError,
+    collect_applicant,
+)
 from sharko.messages import (
+    CURRENCY_NOTE,
     DISCLAIMER,
     LIMITATIONS_NOTE,
     missing_data_message,
@@ -35,7 +42,8 @@ from sharko.model import (
     save_bundle,
     train_model,
 )
-from sharko.render import STRATEGY_LABELS, format_check_result
+from sharko.plain import WIDTH, chance, heading, wrap
+from sharko.render import PLAIN_WAYS, STRATEGY_LABELS, format_check_result
 from sharko.report import generate_report
 from sharko.search import Strategy, run_all_strategies
 
@@ -47,21 +55,62 @@ def _fail(message: str) -> int:
     return 2
 
 
+def _banner(title: str) -> None:
+    print("")
+    print("=" * WIDTH)
+    print(title)
+    print("=" * WIDTH)
+
+
 def _print_metrics(metrics: dict) -> None:
-    print(f"accuracy: {metrics['accuracy']:.4f}")
-    print(f"precision: {metrics['precision']:.4f}")
-    print(f"recall: {metrics['recall']:.4f}")
-    print(f"F1: {metrics['f1']:.4f}")
-    print(f"ROC-AUC: {metrics['roc_auc']:.4f}")
-    print(f"confusion matrix: {metrics['confusion_matrix']}")
+    rows = [
+        ("accuracy", "accuracy", "share of loans predicted correctly"),
+        ("precision", "precision", "when it says Approved, how often it is right"),
+        ("recall", "recall", "share of truly Approved loans it caught"),
+        ("F1", "f1", "balance of precision and recall"),
+        ("ROC-AUC", "roc_auc", "ranks Approved above Rejected (1 = perfect)"),
+    ]
+    for label, key, meaning in rows:
+        print(f"  {label:<10}{metrics[key]:.4f}  {meaning}")
+    (rej_right, rej_wrong), (app_wrong, app_right) = metrics["confusion_matrix"]
+    print("  Hits and misses on the test loans:")
+    print(f"    Truly Rejected: {rej_right} right, {rej_wrong} wrong")
+    print(f"    Truly Approved: {app_right} right, {app_wrong} wrong")
+
+
+def _print_search_limits(space) -> None:
+    terms = ", ".join(str(term) for term in space.terms)
+    print("Loan limits learned from the data:")
+    print(
+        f"  amounts {space.amount_min:,} to {space.amount_max:,} INR "
+        f"(steps of {space.amount_step:,}); terms {terms} years"
+    )
+
+
+def _print_next(command: str) -> None:
+    print("")
+    print(f"Next step: python -m sharko {command}")
 
 
 def _print_training(bundle) -> None:
-    print(f"chosen model: {bundle.model_name}")
-    print("CV AUC:")
+    _banner("Training complete")
+    print(CURRENCY_NOTE)
+    for line in wrap(
+        "Sharko tried 3 kinds of model and kept the one that scored best on "
+        "a practice test (cross-validation) using only the training loans."
+    ):
+        print(line)
+    print("")
+    print(f"Chosen model: {bundle.model_name}")
+    print("Practice-test scores (CV AUC, 1 = perfect):")
     for name, score in bundle.cv_auc.items():
-        print(f"{name}: {score:.4f}")
+        print(f"  {name}: {score:.4f}")
+    print("")
+    print("Final check on loans the model never saw (20% held back):")
     _print_metrics(bundle.test_metrics)
+    print("")
+    _print_search_limits(bundle.search_space)
+    _print_next("check --example")
 
 
 def _train(args: argparse.Namespace) -> int:
@@ -94,7 +143,11 @@ def _evaluate(args: argparse.Namespace) -> int:
     if isinstance(loaded, int):
         return loaded
     bundle, test = loaded
+    _banner("Evaluation")
+    print(CURRENCY_NOTE)
+    print("Testing the saved model on the 20% of loans it never saw...")
     _print_metrics(evaluate_model(bundle.pipeline, test))
+    _print_next("check --example")
     return 0
 
 
@@ -111,6 +164,15 @@ def _experiment(args: argparse.Namespace) -> int:
     def scorer(frame: pd.DataFrame):
         return approval_scores(bundle.pipeline, frame)
 
+    _banner("Batch experiment")
+    print(CURRENCY_NOTE)
+    for line in wrap(
+        "This tests many loans at once. It takes the held-out loans that "
+        "the data marks Rejected and the model also rejects (the "
+        '"eligible" loans) and runs all 3 searches on each. It may take a '
+        "while."
+    ):
+        print(line)
     results = run_experiment(
         test,
         scorer,
@@ -125,11 +187,50 @@ def _experiment(args: argparse.Namespace) -> int:
         encoding="utf-8",
     )
     eligible = 0 if results.empty else int(results["loan_id"].nunique())
-    print(f"eligible: {eligible}")
-    print(summarize(results).to_string())
+    print(f"Eligible loans: {eligible}")
+    _print_experiment_table(summarize(results))
+    print(f"Full results saved to {out / RESULTS_NAME}")
+    _print_next("report   (draws charts and tables)")
+    print("")
+    print("IMPORTANT")
+    print("-" * WIDTH)
     print(DISCLAIMER)
     print(LIMITATIONS_NOTE)
     return 0
+
+
+def _print_experiment_table(summary: pd.DataFrame) -> None:
+    for line in heading("Results by way of changing the loan"):
+        print(line)
+    if summary.empty:
+        print("  No eligible loans, so there is nothing to compare.")
+        return
+    print(f"  {'Way':<17}{'Loans':>6}{'Approved option found':>24}{'Median tries':>14}")
+    for strategy, row in summary.iterrows():
+        try:
+            way = PLAIN_WAYS[Strategy(strategy)]
+        except ValueError:
+            way = str(strategy)
+        found = row["flip_rate_pct"]
+        tries = row["median_configs_evaluated"]
+        found_text = "n/a" if pd.isna(found) else f"{found:.1f}%"
+        tries_text = "n/a" if pd.isna(tries) else f"{tries:,.0f}"
+        print(
+            f"  {way:<17}{int(row['eligible']):>6}"
+            f"{found_text:>24}{tries_text:>14}"
+        )
+    print("")
+    print("How to read this table")
+    for text in (
+        "Loans: how many loans the search was run on.",
+        "Approved option found: share of those loans where the search "
+        "found a change the model would approve.",
+        "Median tries: the typical number of options checked before "
+        "stopping. Fewer means a quicker answer.",
+    ):
+        for line in wrap(f"- {text}", indent=2, hang=2):
+            print(line)
+    print("")
 
 
 def _score_applicant(scorer, applicant) -> float:
@@ -146,6 +247,17 @@ def _check(args: argparse.Namespace) -> int:
         return _fail(missing_model_message(model))
     bundle = load_bundle(model)
     provided = {name: getattr(args, name) for name in INTAKE_FIELDS}
+    if args.example:
+        provided = {
+            name: value if value is not None else EXAMPLE_APPLICANT[name]
+            for name, value in provided.items()
+        }
+        print("")
+        for line in wrap(
+            "Using the built-in example application. Change any answer with "
+            "its flag, for example --cibil-score 800."
+        ):
+            print(line)
     try:
         applicant = collect_applicant(
             provided,
@@ -153,9 +265,19 @@ def _check(args: argparse.Namespace) -> int:
             interactive=not args.no_prompt,
         )
     except IntakeError as exc:
-        return _fail(str(exc))
+        hint = ""
+        if args.example:
+            hint = (
+                "\nThe built-in example was made for the default dataset. "
+                "Override a value with its flag."
+            )
+        return _fail(str(exc) + hint)
+    except (KeyboardInterrupt, EOFError):
+        print("\nCancelled. Nothing was saved.", file=sys.stderr)
+        return 130
 
     scorer = lambda df: approval_scores(bundle.pipeline, df)
+    print("Checking the application...")
     baseline_score = _score_applicant(scorer, applicant)
     if predicted_status(baseline_score) == APPROVED:
         text = format_check_result(
@@ -168,6 +290,10 @@ def _check(args: argparse.Namespace) -> int:
         strategies = None
         status = APPROVED
     else:
+        print(
+            "Not approved as submitted. Looking for the smallest "
+            "approved change..."
+        )
         baseline_score, results = run_all_strategies(
             applicant,
             scorer,
@@ -185,7 +311,7 @@ def _check(args: argparse.Namespace) -> int:
     print(text)
     HistoryLog(Path(args.history)).append(
         {
-            "source": "interactive",
+            "source": "example" if args.example else "interactive",
             "applicant": {name: applicant[name] for name in FEATURES},
             "baseline_score": float(baseline_score),
             "baseline_status": status,
@@ -195,7 +321,8 @@ def _check(args: argparse.Namespace) -> int:
     return 0
 
 
-def _closest_logged(record: dict) -> tuple[str, int] | None:
+def _closest_logged(record: dict) -> str | None:
+    """Plain name of the way that found the closest approved option, if any."""
     if record.get("baseline_status") != REJECTED:
         return None
     logged = record.get("strategies")
@@ -216,29 +343,46 @@ def _closest_logged(record: dict) -> tuple[str, int] | None:
             closest_distance = distance
     if closest is None:
         return None
-    label = STRATEGY_LABELS[Strategy(closest["strategy"])]
-    return label, int(closest["configurations_evaluated"])
+    return PLAIN_WAYS[Strategy(closest["strategy"])]
 
 
 def _history(args: argparse.Namespace) -> int:
     records = HistoryLog(Path(args.history)).read()
     if not records:
-        print("No history yet.")
+        print("No history yet. Run: python -m sharko check --example")
         return 0
+    _banner("Check history")
     print(f"Runs logged: {len(records)}")
+    print(CURRENCY_NOTE)
+    for line in wrap(
+        "Times are UTC. chance = the model's approval chance. fix = the "
+        "closest change found that would be approved."
+    ):
+        print(line)
+    print("-" * WIDTH)
     last = args.last
     window = records[-last:] if last else []
     for record in window:
+        when = str(record["timestamp"])[:16].replace("T", " ")
         line = (
-            f"{record['timestamp']} | {record['baseline_status']} | "
-            f"score {float(record['baseline_score']):.3f}"
+            f"{when}  {record['baseline_status']:<8}  "
+            f"chance {chance(record['baseline_score'])}"
         )
         closest = _closest_logged(record)
         if closest is not None:
-            label, evaluated = closest
-            line += f" | closest: {label} | configurations evaluated: {evaluated}"
+            line += f"  fix: {closest}"
         print(line)
     return 0
+
+
+_REPORT_FILES = {
+    "summary.csv": "one row per way, with all the averages",
+    "paired_comparison.csv": "ways compared on the loans both could fix",
+    "flip_rate_by_strategy.png": "how often each way found an approved option",
+    "distance_by_strategy.png": "how big a change each way needed",
+    "configs_evaluated_by_strategy.png": "how many options each way tried",
+    "amount_original_vs_flip.png": "original loan amount vs the new one",
+}
 
 
 def _report(args: argparse.Namespace) -> int:
@@ -246,55 +390,181 @@ def _report(args: argparse.Namespace) -> int:
     results_path = out / RESULTS_NAME
     if not results_path.is_file():
         return _fail(missing_results_message(results_path))
+    _banner("Report")
+    print("Writing summary tables and figures...")
     results = pd.read_csv(results_path, encoding="utf-8")
-    for path in generate_report(results, out):
-        print(path)
+    paths = generate_report(results, out)
+    print(f"Saved in {out}:")
+    for path in paths:
+        print(f"  {path.name}")
+        meaning = _REPORT_FILES.get(path.name)
+        if meaning:
+            print(f"      {meaning}")
     return 0
 
 
+def _tutorial(args: argparse.Namespace) -> int:
+    print(tutorial())
+    return 0
+
+
+_INTAKE_HELP = {
+    "education": "Graduate or Not Graduate (also 1/2)",
+    "self_employed": "Yes or No (also y/n or 1/2)",
+    "no_of_dependents": "integer >= 0",
+    "income_annum": "annual income in INR (whole number)",
+    "cibil_score": "CIBIL score from 300 to 900",
+    "residential_assets_value": "residential assets in INR",
+    "commercial_assets_value": "commercial assets in INR",
+    "luxury_assets_value": "luxury assets in INR",
+    "bank_asset_value": "bank assets in INR",
+    "loan_amount": "loan amount in INR (training-grid multiple)",
+    "loan_term": "loan term in years from the training set",
+}
+
+
 def _add_data_model(parser: argparse.ArgumentParser) -> None:
-    parser.add_argument("--data", type=Path, default=DEFAULT_DATA)
-    parser.add_argument("--model", type=Path, default=DEFAULT_MODEL)
+    parser.add_argument(
+        "--data",
+        type=Path,
+        default=DEFAULT_DATA,
+        help="path to loan_approval_dataset.csv",
+    )
+    parser.add_argument(
+        "--model",
+        type=Path,
+        default=DEFAULT_MODEL,
+        help="path to the saved model bundle",
+    )
 
 
 def _add_intake_flags(parser: argparse.ArgumentParser) -> None:
     for name in INTAKE_FIELDS:
         flag = "--" + name.replace("_", "-")
-        parser.add_argument(flag, dest=name, default=None)
+        parser.add_argument(flag, dest=name, default=None, help=_INTAKE_HELP[name])
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(prog="sharko")
-    sub = parser.add_subparsers(dest="command", required=True)
+    parser = argparse.ArgumentParser(
+        prog="sharko",
+        description=(
+            "Sharko predicts whether a loan application would be approved. "
+            "If it would be rejected, Sharko finds the smallest change to the "
+            "loan amount or term that would be approved. " + CURRENCY_NOTE
+        ),
+        epilog="New here? Run: python -m sharko tutorial",
+    )
+    sub = parser.add_subparsers(dest="command", title="commands")
 
-    train = sub.add_parser("train", help="train a model and save the bundle")
+    train = sub.add_parser(
+        "train",
+        help="step 1: teach Sharko from the loan data (run once)",
+        description=(
+            "Teach Sharko from the loan data. It tries 3 kinds of model, "
+            "keeps the best one and saves it. Run this once."
+        ),
+    )
     _add_data_model(train)
     train.set_defaults(func=_train)
 
-    evaluate = sub.add_parser("evaluate", help="recompute saved test metrics")
+    evaluate = sub.add_parser(
+        "evaluate",
+        help="show how accurate the saved model is",
+        description="Test the saved model on loans it never saw and print the scores.",
+    )
     _add_data_model(evaluate)
     evaluate.set_defaults(func=_evaluate)
 
-    check = sub.add_parser("check", help="score one application and search flips")
-    check.add_argument("--model", type=Path, default=DEFAULT_MODEL)
-    check.add_argument("--history", type=Path, default=DEFAULT_HISTORY)
-    check.add_argument("--no-prompt", action="store_true")
+    check = sub.add_parser(
+        "check",
+        help="check one loan application (try: check --example)",
+        description=(
+            "Check one loan application. Answer the questions, or pass the "
+            "answers as flags. If it is not approved, Sharko finds the "
+            "smallest change to the loan amount or term that would be "
+            "approved. Use --example to see a worked example. " + CURRENCY_NOTE
+        ),
+    )
+    check.add_argument(
+        "--model",
+        type=Path,
+        default=DEFAULT_MODEL,
+        help="path to the saved model bundle",
+    )
+    check.add_argument(
+        "--history",
+        type=Path,
+        default=DEFAULT_HISTORY,
+        help="append-only JSONL log path",
+    )
+    check.add_argument(
+        "--example",
+        action="store_true",
+        help="use a built-in sample application (flags still override it)",
+    )
+    check.add_argument(
+        "--no-prompt",
+        action="store_true",
+        help="do not ask for missing fields; require every applicant flag",
+    )
     _add_intake_flags(check)
     check.set_defaults(func=_check)
 
-    experiment = sub.add_parser("experiment", help="search flips on the test split")
+    experiment = sub.add_parser(
+        "experiment",
+        help="for analysts: run the what-if search on many loans",
+        description=(
+            "Run all 3 searches (amount only, term only, both) on every "
+            "eligible held-out loan. " + CURRENCY_NOTE
+        ),
+    )
     _add_data_model(experiment)
-    experiment.add_argument("--out", type=Path, default=DEFAULT_OUT)
+    experiment.add_argument(
+        "--out",
+        type=Path,
+        default=DEFAULT_OUT,
+        help="directory for experiment_results.csv",
+    )
     experiment.set_defaults(func=_experiment)
 
-    report = sub.add_parser("report", help="write tables and figures")
-    report.add_argument("--out", type=Path, default=DEFAULT_OUT)
+    report = sub.add_parser(
+        "report",
+        help="for analysts: draw charts and tables from the experiment",
+        description="Build summary tables and charts from the experiment results.",
+    )
+    report.add_argument(
+        "--out",
+        type=Path,
+        default=DEFAULT_OUT,
+        help="directory containing experiment_results.csv",
+    )
     report.set_defaults(func=_report)
 
-    history = sub.add_parser("history", help="list logged check runs")
-    history.add_argument("--history", type=Path, default=DEFAULT_HISTORY)
-    history.add_argument("--last", type=int, default=10)
+    history = sub.add_parser(
+        "history",
+        help="list your earlier checks",
+        description="Show your most recent checks. Nothing here changes a later result.",
+    )
+    history.add_argument(
+        "--history",
+        type=Path,
+        default=DEFAULT_HISTORY,
+        help="JSONL history path",
+    )
+    history.add_argument(
+        "--last",
+        type=int,
+        default=10,
+        help="how many recent runs to print (default: 10)",
+    )
     history.set_defaults(func=_history)
+
+    guide = sub.add_parser(
+        "tutorial",
+        help="step-by-step guide to installing, running and reading Sharko",
+        description="Print a short step-by-step guide to using Sharko.",
+    )
+    guide.set_defaults(func=_tutorial)
 
     return parser
 
@@ -306,4 +576,7 @@ def main(argv: list[str] | None = None) -> int:
     except SystemExit as exc:
         code = exc.code
         return code if isinstance(code, int) else 2
+    if args.command is None:
+        print(start_screen())
+        return 0
     return args.func(args)

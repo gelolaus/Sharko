@@ -3,7 +3,7 @@ import pytest
 
 from sharko.cli import main
 from sharko.experiment import RESULT_COLUMNS
-from sharko.messages import DISCLAIMER, LIMITATIONS_NOTE
+from sharko.messages import CURRENCY_NOTE, DISCLAIMER, LIMITATIONS_NOTE
 from sharko.model import load_bundle
 
 
@@ -25,6 +25,7 @@ def test_experiment_writes_results_and_disclaimer(trained, tmp_path, capsys):
     assert list(df.columns) == RESULT_COLUMNS and len(df) > 0 and len(df) % 3 == 0
     out = capsys.readouterr().out
     assert DISCLAIMER in out and LIMITATIONS_NOTE in out
+    assert CURRENCY_NOTE in out
 
 
 def test_experiment_is_reproducible(trained, tmp_path):
