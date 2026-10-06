@@ -184,3 +184,24 @@ def test_report_open_flag_opens_the_dashboard_once(
     assert code == 0 and len(browser_calls) == 1
     assert browser_calls[0].startswith("file:") and browser_calls[0].endswith("report.html")
     assert "Opening" in out
+
+
+def test_tutorial_explains_how_to_get_and_where_to_find_the_charts(capsys):
+    _, out, _ = run(["tutorial"], capsys)
+    assert "Step 6" in out and "outputs/report.html" in out
+    assert out.index("python -m sharko experiment") < out.index("python -m sharko report --open")
+    assert "Run experiment first" in out
+    for meaning in (
+        "How often each way found an approved option",
+        "How big a change was needed",
+        "How many options were tried",
+        "Original loan amount vs the new one",
+    ):
+        assert meaning in out
+    assert_readable(out)
+
+
+def test_start_screen_points_to_the_charts(capsys):
+    _, out, _ = run([], capsys)
+    assert "python -m sharko report --open" in out and "charts" in out
+    assert_readable(out)
