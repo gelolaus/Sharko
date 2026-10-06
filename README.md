@@ -1,97 +1,109 @@
 # Sharko
 
-Sharko is a Python command-line app that trains a loan-approval classifier on `loan_approval_dataset.csv`. When an application is predicted Rejected, it searches for the closest loan amount, loan term, or both that flips the prediction to Approved.
+Sharko is a small command-line app that answers one question about a loan:
 
-Python 3.10 or newer.
+> "If this application would be **rejected**, what is the **smallest change** to the loan amount or loan term that would get it **approved**?"
+
+It learns from a public dataset of past loan decisions (`loan_approval_dataset.csv`, an Indian lending setting). **All amounts are in Indian Rupees (INR).** It is a course project for MODESIM, and its results are not a lender decision or financial advice.
+
+## How it works
+
+1. **Learn.** Sharko trains a model on past loan decisions. The model gives any application a *chance of approval* from 0% to 100%. 50% or more counts as approved.
+2. **Check.** You enter one application. If the chance is 50% or more, you are done.
+3. **Search.** If it is below 50%, Sharko tries other loan amounts and terms, nearest to your request first. Everything else about the applicant stays the same. It stops at the first option the model would approve.
+4. **Compare.** Sharko does the search three ways (change the amount only, the term only, or both) and shows all three side by side.
+
+Example from a real run: an application with a 0.3% chance of approval becomes 54.1% if the loan is changed from 12,200,000 INR over 8 years to 14,600,000 INR over 4 years. Changing only the amount or only the term found nothing.
 
 ## Install
+
+You need Python 3.10 or newer.
 
 ```
 python -m pip install -r requirements.txt
 ```
 
-## Commands
+## Quick start
 
-Defaults: `--data loan_approval_dataset.csv`, `--model artifacts/model.joblib`, `--out outputs`, `--history artifacts/history.jsonl`.
-
-Train a model and save the bundle. Prints 5-fold CV ROC-AUC for logistic regression, random forest, and gradient boosting, then held-out test metrics.
+Run these from the project folder.
 
 ```
 python -m sharko train
+python -m sharko check --example
 ```
 
-Recompute the saved model's test metrics.
+1. `train` teaches Sharko from the loan data. Run it once.
+2. `check --example` shows a full worked example. No typing needed.
+
+Then try your own application. Sharko asks 11 short questions and shows the allowed answers under each one. Press Ctrl+C to quit.
 
 ```
-python -m sharko evaluate
+python -m sharko check
 ```
 
-Search flips for every eligible held-out row (recorded Rejected and predicted Rejected). Prints the eligible count, a three-strategy summary, and the disclaimer.
+Stuck? `python -m sharko tutorial` prints a step-by-step guide, and `python -m sharko` on its own shows the quick start.
 
-```
-python -m sharko experiment
-```
+## Reading the result
 
-Write summary tables and figures from the experiment results.
+The result is built to be read from the top, and you can stop early.
 
-```
-python -m sharko report
-```
+| Section | What it tells you |
+| --- | --- |
+| RESULT | Approved or not, with the model's chance of approval |
+| SMALLEST CHANGE THAT WOULD BE APPROVED | The closest loan amount and term that works |
+| HOW SHARKO FOUND THIS | The 4 steps above, with this run's numbers |
+| THE 3 WAYS COMPARED | Amount only, term only, both |
+| IMPORTANT | What this result is and is not |
+| TECHNICAL DETAILS | Exact numbers for analysts. Safe to skip. |
 
-Score one application. With `--no-prompt`, pass every applicant field. Without it, Sharko asks for anything missing.
+A bigger loan can come out as "approved". That only reflects patterns in the past data. It does not mean a bigger loan is safer.
 
-```
-python -m sharko check --no-prompt --education Graduate --self-employed No --no-of-dependents 2 --income-annum 4100000 --cibil-score 417 --residential-assets-value 2700000 --commercial-assets-value 2200000 --luxury-assets-value 8800000 --bank-asset-value 3300000 --loan-amount 12200000 --loan-term 8
-```
+## Commands
 
-List logged check runs.
+| Command | What it does |
+| --- | --- |
+| `python -m sharko train` | Teach Sharko from the loan data (run once) |
+| `python -m sharko check` | Check one application, answering questions |
+| `python -m sharko check --example` | Check a built-in sample application |
+| `python -m sharko history` | List your earlier checks |
+| `python -m sharko tutorial` | Step-by-step guide |
+| `python -m sharko evaluate` | Show how accurate the saved model is |
+| `python -m sharko experiment` | For analysts: run the search on many test loans |
+| `python -m sharko report` | For analysts: draw charts and tables from the experiment |
 
-```
-python -m sharko history
-```
+Every command accepts `--help`. To skip the questions, pass every answer as a flag with `check --no-prompt`. See `python -m sharko check --help` for the flag names.
 
-Run the tests.
+Run the tests with `python -m pytest`.
 
-```
-python -m pytest
-```
+## Files Sharko writes
 
-## Output locations
+These folders are generated and git-ignored.
 
-- `artifacts/model.joblib` - trained model bundle
-- `artifacts/history.jsonl` - append-only log of check runs
-- `outputs/experiment_results.csv` - one row per eligible application and strategy
-- `outputs/summary.csv` - strategy summary
-- `outputs/paired_comparison.csv` - paired comparisons of mutual successes
-- `outputs/flip_rate_by_strategy.png`
-- `outputs/distance_by_strategy.png`
-- `outputs/configs_evaluated_by_strategy.png`
-- `outputs/amount_original_vs_flip.png` - written when an amount change flips a prediction
+- `artifacts/model.joblib` - the trained model
+- `artifacts/history.jsonl` - a log of your checks (write-only, it never changes a result)
+- `outputs/` - `experiment_results.csv`, `summary.csv`, `paired_comparison.csv` and the charts (`.png`)
 
-`artifacts/` and `outputs/` are generated and git-ignored.
+## For analysts
 
-## Search rules
-
-The split is 80/20, stratified on `loan_status`, seed 42. Search bounds, normalization, and model selection use the training partition only. Approved means the model approval probability is at least 0.5.
-
-A search may change `loan_amount` and `loan_term`. Every other applicant field stays fixed. The three strategies are Amount-only, Term-only, and Combined. Candidates are ordered by normalized distance, then amount, then term. Results list all three. The smallest normalized distance can be labeled closest to your request.
+- The data is split 80/20 (stratified on `loan_status`, seed 42). Search limits, scaling and model choice use the 80% training part only. The model is picked by cross-validated ROC-AUC from logistic regression, random forest and gradient boosting.
+- Only `loan_amount` and `loan_term` change during a search. Every other field stays fixed.
+- Options are ordered by normalized distance, then amount, then term. Ties are decided on the exact integer numerator, never on floats.
+- Sharko never names one "best" way with a weighted score. It reports the three ways side by side.
+- Every result shows the original and new amount and term, the model score and the distance, plus the disclaimer.
 
 ## Ethics and limitations
 
-Every user-facing result shows the original and modified amount and term, the model score, and the normalized distance, plus test metrics and this statement:
-
 ```
-Model-generated what-if result. This is not a lender decision, a loan offer, or financial advice.
-Limitations: the model reflects patterns in a public dataset that lacks economic variables (e.g. inflation, interest rates) and demographic detail; a missing flip means none was found within the searched amounts and terms, not that none exists.
+Model-generated what-if result. This is not a lender decision,
+a loan offer, or financial advice.
+Limitations: the model reflects patterns in a public dataset that
+lacks economic variables (e.g. inflation, interest rates) and
+demographic detail. If no approved option is found, that means none
+was found within the searched amounts and terms, not that none exists.
 ```
 
-Sharko reports the what-if result for a person to read. Filing an application stays with the applicant and the lender.
+Sharko reports a what-if result for a person to read. Filing an application stays with the applicant and the lender.
 
 ## Roadmap
 
-Deferred after v1:
-
-- Sensitivity analysis on the 28 negative-asset rows.
-- History-based warm-start.
-
-Retraining on history is rejected for v1. History is write-only and must not change a search or the trained model.
+Deferred after v1: sensitivity analysis on the 28 negative-asset rows, and history-based warm-start. Retraining on history is rejected for v1.
