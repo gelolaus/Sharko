@@ -36,3 +36,29 @@ def test_trace_tries_change_only_amount_and_term_as_the_strategy_allows():
         t.amount != APP["loan_amount"] and t.term != APP["loan_term"]
         for t in trace[Strategy.COMBINED]
     )
+
+
+from sharko.trace import margin_scan  # noqa: E402
+
+
+def test_margin_scan_scores_every_allowed_term_and_amount():
+    margin = margin_scan(APP, by_term, SPACE)
+    assert [term for term, _ in margin.terms] == list(SPACE.terms)
+    assert margin.amounts[0][0] == SPACE.amount_min and margin.amounts[-1][0] == SPACE.amount_max
+    assert len(margin.amounts) == (SPACE.amount_max - SPACE.amount_min) // SPACE.amount_step + 1
+    # by_term approves terms 2 and 4 only; the amount never matters to it
+    assert [term for term, score in margin.terms if score >= 0.5] == [2, 4]
+    assert margin.terms_approved == 2 and margin.amounts_approved == 0
+
+
+def test_margin_scan_changes_only_one_thing_at_a_time():
+    seen = []
+
+    def spy(frame):
+        seen.append(frame[["loan_amount", "loan_term"]].drop_duplicates())
+        return by_term(frame)
+
+    margin_scan(APP, spy, SPACE)
+    terms_frame, amounts_frame = seen[0], seen[1]
+    assert set(terms_frame["loan_amount"]) == {APP["loan_amount"]}
+    assert set(amounts_frame["loan_term"]) == {APP["loan_term"]}

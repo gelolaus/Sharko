@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import tempfile
 from pathlib import Path
 
 import matplotlib
@@ -34,6 +35,12 @@ STRATEGY_COLORS = {
     Strategy.COMBINED.value: "#009E73",
 }
 _FALLBACK_COLOR = "#999999"
+FIGURE_FILES = {
+    "flip_rate": "flip_rate_by_strategy.png",
+    "distance": "distance_by_strategy.png",
+    "configs": "configs_evaluated_by_strategy.png",
+    "scatter": "amount_original_vs_flip.png",
+}
 _FIGSIZE = (7.5, 5.0)
 _DPI = 150
 
@@ -49,7 +56,6 @@ def generate_report(
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
     written: list[Path] = []
-    figures: dict[str, Path] = {}
     eligible = _eligible_count(results)
 
     summary = summarize(results)
@@ -63,20 +69,7 @@ def generate_report(
     )
     written.append(paired_path)
 
-    figures["flip_rate"] = _bar_flip_rate(
-        summary, eligible, out_dir / "flip_rate_by_strategy.png"
-    )
-    figures["distance"] = _box_distance(
-        results, eligible, out_dir / "distance_by_strategy.png"
-    )
-    figures["configs"] = _box_configs(
-        results, eligible, out_dir / "configs_evaluated_by_strategy.png"
-    )
-    amount_flips = _amount_flips(results)
-    if len(amount_flips) > 0:
-        figures["scatter"] = _scatter_amounts(
-            amount_flips, eligible, out_dir / "amount_original_vs_flip.png"
-        )
+    figures = render_figures(results, out_dir)
     written.extend(figures.values())
 
     if reports_dir is None:
@@ -86,6 +79,49 @@ def generate_report(
         page = Path(reports_dir) / "Experiment_Report.html"
     written.append(write_dashboard(summary, eligible, figures, page))
     return written
+
+
+def render_figures(results: pd.DataFrame, directory: Path) -> dict[str, Path]:
+    """Draw the paper's charts into `directory` (no tables, no page)."""
+    directory = Path(directory)
+    directory.mkdir(parents=True, exist_ok=True)
+    eligible = _eligible_count(results)
+    summary = summarize(results)
+    figures = {
+        "flip_rate": _bar_flip_rate(summary, eligible, directory / FIGURE_FILES["flip_rate"]),
+        "distance": _box_distance(results, eligible, directory / FIGURE_FILES["distance"]),
+        "configs": _box_configs(results, eligible, directory / FIGURE_FILES["configs"]),
+    }
+    amount_flips = _amount_flips(results)
+    if len(amount_flips) > 0:
+        figures["scatter"] = _scatter_amounts(
+            amount_flips, eligible, directory / FIGURE_FILES["scatter"]
+        )
+    return figures
+
+
+def figure_bytes(
+    results: pd.DataFrame, out_dir: Path, results_path: Path
+) -> dict[str, bytes]:
+    """PNG bytes of the paper's charts: reuse the saved ones if they are newer than
+    the experiment results, otherwise draw them fresh in a temporary folder."""
+    out_dir = Path(out_dir)
+    saved = {
+        key: out_dir / name
+        for key, name in FIGURE_FILES.items()
+        if (out_dir / name).is_file()
+    }
+    newest = Path(results_path).stat().st_mtime
+    required = ("flip_rate", "distance", "configs")
+    if all(key in saved and saved[key].stat().st_mtime >= newest for key in required):
+        return {
+            key: path.read_bytes()
+            for key, path in saved.items()
+            if path.stat().st_mtime >= newest
+        }
+    with tempfile.TemporaryDirectory() as scratch:
+        figures = render_figures(results, Path(scratch))
+        return {key: path.read_bytes() for key, path in figures.items()}
 
 
 def _eligible_count(results: pd.DataFrame) -> int:

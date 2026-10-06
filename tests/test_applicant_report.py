@@ -108,3 +108,72 @@ def test_report_creates_the_reports_folder(tmp_path):
     assert not (tmp_path / "Reports").exists()
     make(tmp_path)
     assert (tmp_path / "Reports").is_dir()
+
+
+import pandas as pd  # noqa: E402
+
+from sharko.applicant_report import ExperimentContext  # noqa: E402
+from sharko.experiment import summarize  # noqa: E402
+from sharko.report import render_figures  # noqa: E402
+from sharko.trace import margin_scan  # noqa: E402
+from tests.frames import RESULTS_FIXTURE  # noqa: E402
+
+
+def experiment_context(tmp_path):
+    figures = {k: p.read_bytes() for k, p in render_figures(RESULTS_FIXTURE, tmp_path / "figs").items()}
+    return ExperimentContext(figures, summarize(RESULTS_FIXTURE), 4)
+
+
+def make_full(tmp_path, approved=False, experiment=None):
+    path = tmp_path / "Reports" / "r.html"
+    if approved:
+        score, results, trace = 0.93, None, None
+        margin = margin_scan(APP, by_term, SPACE)
+    else:
+        score, results = run_all_strategies(APP, by_term, SPACE)
+        trace, margin = build_trace(APP, by_term, SPACE, results), None
+    write_applicant_report(path, "Ana", "Cruz", APP, score, results, trace, METRICS, SPACE,
+                           created=WHEN, experiment=experiment, margin=margin)
+    return path.read_text(encoding="utf-8")
+
+
+def test_approved_report_shows_the_safety_margin_chart_and_plain_sentences(tmp_path):
+    html = make_full(tmp_path, approved=True)
+    assert "How safe is this approval?" in html and html.count("<img") == 1
+    assert "would still approve 2 of 10 loan terms" in html
+    assert "0 of 11 loan amounts" in html
+    assert 'alt="' in html and "Try by try" not in html
+
+
+def test_report_without_experiment_results_says_how_to_add_the_paper_charts(tmp_path):
+    for approved in (False, True):
+        html = make_full(tmp_path, approved=approved)
+        assert "How this compares with the experiment" in html
+        assert "python -m sharko experiment" in html
+
+
+def test_report_embeds_the_paper_charts_and_a_you_vs_experiment_table(tmp_path):
+    html = make_full(tmp_path, experiment=experiment_context(tmp_path))
+    assert html.count("<img") == 5            # the try chart + the 4 paper charts
+    for title in PAPER_TITLES.values():
+        assert title in html
+    block = html.split("How this compares with the experiment")[1].split("Model quality")[0]
+    assert "4 loans in the experiment" in block
+    for way in ("Amount only", "Term only", "Amount and term"):
+        assert way in block
+    assert "25.0%" in block and "50.0%" in block        # experiment flip rates from the fixture
+    assert html.isascii() and "http://" not in html and "https://" not in html
+
+
+def test_approved_report_also_gets_the_paper_charts_without_the_table(tmp_path):
+    html = make_full(tmp_path, approved=True, experiment=experiment_context(tmp_path))
+    assert html.count("<img") == 5            # margin chart + 4 paper charts
+    assert "You vs the experiment" not in html
+
+
+PAPER_TITLES = {
+    "flip_rate": "Prediction-Flip Rate by Strategy",
+    "distance": "Minimum Normalized Distance by Strategy",
+    "configs": "Configurations Evaluated by Strategy",
+    "scatter": "Original vs. Prediction-Flipping Loan Amount",
+}

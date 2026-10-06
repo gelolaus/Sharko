@@ -136,3 +136,26 @@ def test_report_command_writes_the_charts_page_into_reports(
     assert reports() == ["Experiment_Report.html"] and browser_calls == []
     main(["report", "--open", "--out", str(trained_experiment.out)])
     assert len(browser_calls) == 1 and browser_calls[0].endswith("Experiment_Report.html")
+
+
+def test_approved_report_has_the_safety_margin_chart_and_honest_terminal_wording(trained, capsys):
+    _, out, _ = check(trained, capsys, "--no-prompt", *ARGS_APPROVED)
+    html = Path("Reports", "Unnamed_Applicant_Results.html").read_text(encoding="utf-8")
+    assert "How safe is this approval?" in html and html.count("<img") == 1
+    flat = " ".join(out.split())
+    assert "charts showing how safe the approval is" in flat and "every try" not in flat
+
+
+def test_report_includes_the_paper_charts_when_experiment_results_exist(trained_experiment, capsys):
+    _, out, _ = check(trained_experiment, capsys, "--no-prompt", "--out", str(trained_experiment.out),
+                      *ARGS_LOW_CIBIL_LONG_TERM)
+    html = Path("Reports", "Unnamed_Applicant_Results.html").read_text(encoding="utf-8")
+    assert html.count("<img") >= 4 and "Prediction-Flip Rate by Strategy" in html
+    assert "python -m sharko experiment" not in out
+
+
+def test_terminal_tip_points_to_experiment_when_the_paper_charts_are_missing(trained, capsys):
+    _, out, _ = check(trained, capsys, "--no-prompt", *ARGS_LOW_CIBIL_LONG_TERM)
+    assert "python -m sharko experiment" in out
+    lines = [l for l in out.splitlines() if str(Path.cwd()) not in l]
+    assert max(len(l) for l in lines) <= 72

@@ -4,6 +4,7 @@ import base64
 import html
 import io
 from collections.abc import Mapping
+from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -13,9 +14,10 @@ import matplotlib
 matplotlib.use("Agg")
 
 import matplotlib.pyplot as plt
+import pandas as pd
 
 from sharko.config import APPROVAL_THRESHOLD
-from sharko.dashboard import PAGE_CSS
+from sharko.dashboard import PAGE_CSS, figure_alt_texts, figure_html
 from sharko.data import SearchSpace
 from sharko.intake import FIELD_TITLES, INTAKE_FIELDS
 from sharko.messages import CURRENCY_NOTE, DISCLAIMER, LIMITATIONS_NOTE
@@ -23,9 +25,10 @@ from sharko.plain import PLAIN_WAYS, chance, search_steps
 from sharko.render import CHANGE_TITLES, GLOSSARY, closest_flipped
 from sharko.report import STRATEGY_COLORS
 from sharko.search import SearchResult, Strategy
-from sharko.trace import Try
+from sharko.trace import Margin, Try
 
 _CUTOFF = chance(APPROVAL_THRESHOLD)
+_FIGURE_ORDER = ("flip_rate", "distance", "configs", "scatter")
 _SHOWN_TRIES = 5
 _CAN_CHANGE = {"loan_amount", "loan_term"}
 _MONEY = {
@@ -52,6 +55,15 @@ tr.win td { font-weight: 600; }
 """
 
 
+@dataclass(frozen=True)
+class ExperimentContext:
+    """The experiment's charts and summary, so a report can show where it fits."""
+
+    figures: dict[str, bytes]
+    summary: pd.DataFrame
+    eligible: int
+
+
 def _esc(value: object) -> str:
     return html.escape(str(value))
 
@@ -67,6 +79,8 @@ def write_applicant_report(
     test_metrics: Mapping[str, Any] | None,
     space: SearchSpace,
     created: datetime | None = None,
+    experiment: ExperimentContext | None = None,
+    margin: Margin | None = None,
 ) -> Path:
     """Write one self-contained HTML report with everything submitted and the process."""
     created = (created or datetime.now(timezone.utc)).astimezone(timezone.utc)
@@ -82,11 +96,14 @@ def write_applicant_report(
     ]
     if results is None:
         body.append(_scored_section())
+        if margin is not None:
+            body.append(_margin_section(margin))
     else:
         body.append(_steps_section(closest))
         body.append(_compare_section(results, closest))
         if trace:
             body.append(_trace_section(results, trace))
+    body.append(_experiment_section(results, experiment))
     if test_metrics is not None:
         body.append(_metrics_section(test_metrics))
     body.append(_important_section())
@@ -392,6 +409,154 @@ def _draw_trace_axes(axes, ways: list[Strategy], trace: Mapping[Strategy, list[T
         ax.set_xlabel("Try number")
         ax.set_ylim(0, 100)
     return alt_parts
+
+
+def _margin_section(margin: Margin) -> str:
+    terms_total, amounts_total = len(margin.terms), len(margin.amounts)
+    weakest_term = min(margin.terms, key=lambda item: item[1])
+    weakest_amount = min(margin.amounts, key=lambda item: item[1])
+    sentences = [
+        f"At your loan amount ({margin.current_amount:,} INR), the model would "
+        f"still approve {margin.terms_approved} of {terms_total} loan terms. "
+        f"The weakest term is {weakest_term[0]} years, at a "
+        f"{chance(weakest_term[1])} chance.",
+        f"At your loan term ({margin.current_term} years), the model would "
+        f"still approve {margin.amounts_approved} of {amounts_total} loan "
+        f"amounts. The weakest amount is {weakest_amount[0]:,} INR, at a "
+        f"{chance(weakest_amount[1])} chance.",
+    ]
+    paragraphs = "\n".join(f"<p>{_esc(text)}</p>" for text in sentences)
+    return (
+        "<h2>How safe is this approval?</h2>\n"
+        "<p>A yes or no does not show how much room the approval has. Here the "
+        "model scores every allowed loan term, then every allowed loan amount, "
+        "changing only one at a time. Everything else stays the same.</p>\n"
+        + paragraphs
+        + "\n"
+        + _margin_chart(margin)
+    )
+
+
+def _margin_chart(margin: Margin) -> str:
+    with plt.rc_context({"font.size": 12}):
+        fig, (left, right) = plt.subplots(1, 2, figsize=(10, 3.8), sharey=True)
+        panels = (
+            (left, [t for t, _ in margin.terms], [s * 100 for _, s in margin.terms],
+             margin.current_term, "Loan term (years)"),
+            (right, [a / 1e6 for a, _ in margin.amounts], [s * 100 for _, s in margin.amounts],
+             margin.current_amount / 1e6, "Loan amount (million INR)"),
+        )
+        for ax, xs, ys, current, label in panels:
+            ax.plot(xs, ys, color="#0072B2", linewidth=1.8,
+                    marker="o" if len(xs) <= 40 else None, markersize=4)
+            ax.axhline(APPROVAL_THRESHOLD * 100, linestyle="--", color="#555555", linewidth=1)
+            ax.fill_between(xs, 0, APPROVAL_THRESHOLD * 100, color="#999999", alpha=0.15)
+            ax.axvline(current, color="black", linewidth=1, linestyle=":")
+            at_current = ys[xs.index(current)] if current in xs else None
+            if at_current is not None:
+                ax.scatter([current], [at_current], s=110, color="#E69F00",
+                           edgecolors="black", zorder=5)
+            ax.text(0.02, APPROVAL_THRESHOLD * 100 - 8, "not approved below this line",
+                    transform=ax.get_yaxis_transform(), fontsize=10)
+            ax.set_xlabel(label)
+            ax.set_ylim(0, 100)
+        left.set_ylabel("Approval chance (%)")
+        left.set_title("Only the term changes")
+        right.set_title("Only the amount changes")
+        fig.tight_layout()
+        buffer = io.BytesIO()
+        fig.savefig(buffer, format="png", dpi=130)
+        plt.close(fig)
+    data = base64.b64encode(buffer.getvalue()).decode("ascii")
+    alt = (
+        "Approval chance when only the loan term changes, and when only the loan "
+        f"amount changes. Still approved for {margin.terms_approved} of "
+        f"{len(margin.terms)} terms and {margin.amounts_approved} of "
+        f"{len(margin.amounts)} amounts."
+    )
+    return (
+        "<figure>\n<h3>Approval chance if the loan changes</h3>\n"
+        f'<img src="data:image/png;base64,{data}" alt="{html.escape(alt, quote=True)}">\n'
+        "<figcaption>The orange dot is your application. The dashed line is the "
+        f"{_CUTOFF} needed; the grey area below it is not approved.</figcaption>\n</figure>"
+    )
+
+
+def _pct(value: float) -> str:
+    return "n/a" if pd.isna(value) else f"{value:.1f}%"
+
+
+def _num(value: float) -> str:
+    return "n/a" if pd.isna(value) else f"{value:,.0f}"
+
+
+def _experiment_section(
+    results: Mapping[Strategy, SearchResult] | None,
+    experiment: ExperimentContext | None,
+) -> str:
+    title = "<h2>How this compares with the experiment</h2>"
+    if experiment is None:
+        return (
+            f"{title}\n<p>The experiment tests many loans at once and draws the "
+            "charts from the paper. To add them to this report, run "
+            "python -m sharko experiment, then run the check again.</p>"
+        )
+    parts = [
+        title,
+        f"<p>These charts come from the experiment on {experiment.eligible:,} "
+        "held-out loans that were rejected. They show how the three ways of "
+        "changing a loan compare across all of them, not just yours.</p>",
+    ]
+    if results is not None:
+        parts.append(_you_vs_experiment(results, experiment))
+    alts = figure_alt_texts(experiment.summary)
+    for key in _FIGURE_ORDER:
+        if key in experiment.figures:
+            parts.append(figure_html(key, experiment.figures[key], alts[key]))
+    return "\n".join(parts)
+
+
+def _you_vs_experiment(
+    results: Mapping[Strategy, SearchResult], experiment: ExperimentContext
+) -> str:
+    rows = []
+    for strategy in Strategy:
+        result = results.get(strategy)
+        if result is None:
+            continue
+        found = result.flip_found
+        if strategy.value in experiment.summary.index:
+            row = experiment.summary.loc[strategy.value]
+            typical = [
+                _pct(row["flip_rate_pct"]),
+                _num(row["median_configs_evaluated"]),
+                "n/a" if pd.isna(row["median_distance"]) else f"{row['median_distance']:.4f}",
+            ]
+        else:
+            typical = ["n/a", "n/a", "n/a"]
+        rows.append(
+            _row(
+                [
+                    _esc(PLAIN_WAYS[strategy]),
+                    "found" if found else "none",
+                    f"{result.configurations_evaluated:,}",
+                    f"{result.normalized_distance:.4f}" if found else "-",
+                    *typical,
+                ],
+                {2, 3, 4, 5, 6},
+            )
+        )
+    return (
+        "<h3>You vs the experiment</h3>\n"
+        f"<p>Compared with the {experiment.eligible:,} loans in the experiment.</p>\n"
+        + _table(
+            ["Way", "Your result", "Your options tried", "Your distance",
+             "Experiment: approved option found", "Experiment: median options tried",
+             "Experiment: median distance"],
+            rows,
+            {2, 3, 4, 5, 6},
+        )
+    )
 
 
 def _metrics_section(metrics: Mapping[str, Any]) -> str:

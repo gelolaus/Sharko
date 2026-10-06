@@ -8,7 +8,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from sharko.applicant_report import write_applicant_report
+from sharko.applicant_report import ExperimentContext, write_applicant_report
 from sharko.config import (
     APPROVED,
     DEFAULT_DATA,
@@ -51,9 +51,9 @@ from sharko.model import (
 )
 from sharko.plain import WIDTH, chance, heading, wrap
 from sharko.render import PLAIN_WAYS, STRATEGY_LABELS, format_check_result
-from sharko.report import generate_report
+from sharko.report import figure_bytes, generate_report
 from sharko.search import Strategy, run_all_strategies
-from sharko.trace import build_trace
+from sharko.trace import build_trace, margin_scan
 
 RESULTS_NAME = "experiment_results.csv"
 
@@ -310,6 +310,7 @@ def _check(args: argparse.Namespace) -> int:
         strategies = None
         results = None
         trace = None
+        margin = margin_scan(applicant, scorer, bundle.search_space)
         status = APPROVED
     else:
         print(
@@ -331,9 +332,18 @@ def _check(args: argparse.Namespace) -> int:
         strategies = [results[strategy].as_dict() for strategy in Strategy]
         status = REJECTED
         trace = build_trace(applicant, scorer, bundle.search_space, results)
+        margin = None
     print(text)
     _save_report(
-        args, (first, last), applicant, baseline_score, results, trace, bundle
+        args,
+        (first, last),
+        applicant,
+        baseline_score,
+        results,
+        trace,
+        margin,
+        _experiment_context(Path(args.out)),
+        bundle,
     )
     HistoryLog(Path(args.history)).append(
         {
@@ -347,7 +357,24 @@ def _check(args: argparse.Namespace) -> int:
     return 0
 
 
-def _save_report(args, names, applicant, baseline_score, results, trace, bundle) -> None:
+def _experiment_context(out: Path) -> ExperimentContext | None:
+    """The experiment's charts and summary for the report, or None if it was not run."""
+    results_path = out / RESULTS_NAME
+    if not results_path.is_file():
+        return None
+    try:
+        frame = pd.read_csv(results_path, encoding="utf-8")
+        eligible = int(frame["loan_id"].nunique()) if len(frame) else 0
+        return ExperimentContext(
+            figure_bytes(frame, out, results_path), summarize(frame), eligible
+        )
+    except (OSError, ValueError, KeyError):
+        return None
+
+
+def _save_report(
+    args, names, applicant, baseline_score, results, trace, margin, experiment, bundle
+) -> None:
     """Write the per-person HTML report, say where it is, and optionally open it."""
     first, last = names
     folder = Path(args.reports_dir)
@@ -362,21 +389,35 @@ def _save_report(args, names, applicant, baseline_score, results, trace, bundle)
             trace,
             bundle.test_metrics,
             bundle.search_space,
+            experiment=experiment,
+            margin=margin,
         )
     except OSError as exc:
         print(f"Could not save the report: {exc}", file=sys.stderr)
         return
     for line in heading("REPORT SAVED"):
         print(line)
-    for line in wrap(
+    contents = (
         "Your report has your answers, the result, and every try the search "
-        "made, step by step.",
-        indent=2,
-    ):
+        "made, step by step."
+        if results is not None
+        else "Your report has your answers, the result, and charts showing "
+        "how safe the approval is."
+    )
+    if experiment is not None:
+        contents += " It also has the paper's charts for all the test loans."
+    for line in wrap(contents, indent=2):
         print(line)
     print(f"  Folder: {path.parent.resolve()}")
     print(f"  File:   {path.name}")
     print("  Open it by double-clicking the file, or in any web browser.")
+    if experiment is None:
+        for line in wrap(
+            "Tip: run python -m sharko experiment, then check again, to add "
+            "the paper's charts to your report.",
+            indent=2,
+        ):
+            print(line)
     asks = not args.no_prompt and not args.example
     if args.open:
         _open_page(path)
@@ -585,6 +626,12 @@ def build_parser() -> argparse.ArgumentParser:
     )
     check.add_argument("--first-name", default=None, help="first name for the report title and file name")
     check.add_argument("--last-name", default=None, help="last name for the report title and file name")
+    check.add_argument(
+        "--out",
+        type=Path,
+        default=DEFAULT_OUT,
+        help="folder with the experiment results, for the paper's charts (default: outputs)",
+    )
     check.add_argument(
         "--reports-dir",
         type=Path,

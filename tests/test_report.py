@@ -100,3 +100,25 @@ def test_summary_csv_is_unchanged_by_the_dashboard(tmp_path):
     generate_report(RESULTS_FIXTURE, tmp_path)
     expected = summarize(RESULTS_FIXTURE).to_csv(lineterminator="\n")
     assert (tmp_path / "summary.csv").read_text(encoding="utf-8") == expected
+
+
+def test_render_figures_writes_only_the_charts(tmp_path):
+    figures = report.render_figures(RESULTS_FIXTURE, tmp_path)
+    assert set(figures) == {"flip_rate", "distance", "configs", "scatter"}
+    assert all(path.is_file() and path.stat().st_size > 0 for path in figures.values())
+    assert sorted(p.suffix for p in tmp_path.iterdir()) == [".png"] * 4
+
+
+def test_figure_bytes_reuses_fresh_charts_and_redraws_stale_ones(tmp_path):
+    results_path = tmp_path / "experiment_results.csv"
+    RESULTS_FIXTURE.to_csv(results_path, index=False)
+    generate_report(RESULTS_FIXTURE, tmp_path)           # charts newer than the csv
+    chart = tmp_path / "flip_rate_by_strategy.png"
+    marker = b"marker"
+    chart.write_bytes(marker)
+    import os, time
+    future = time.time() + 5
+    os.utime(chart, (future, future))
+    assert report.figure_bytes(RESULTS_FIXTURE, tmp_path, results_path)["flip_rate"] == marker
+    os.utime(chart, (0, 0))                                # now older than the csv
+    assert report.figure_bytes(RESULTS_FIXTURE, tmp_path, results_path)["flip_rate"] != marker

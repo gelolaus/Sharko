@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from typing import Any
 
 import numpy as np
+import pandas as pd
 
 from sharko.config import APPROVAL_THRESHOLD
 from sharko.data import SearchSpace
@@ -70,3 +71,49 @@ def build_trace(
             )
         ]
     return trace
+
+
+@dataclass(frozen=True)
+class Margin:
+    """Approval chance when only the term, or only the amount, is varied."""
+
+    terms: list[tuple[int, float]]
+    amounts: list[tuple[int, float]]
+    current_amount: int
+    current_term: int
+
+    @property
+    def terms_approved(self) -> int:
+        return sum(score >= APPROVAL_THRESHOLD for _, score in self.terms)
+
+    @property
+    def amounts_approved(self) -> int:
+        return sum(score >= APPROVAL_THRESHOLD for _, score in self.amounts)
+
+
+def margin_scan(
+    applicant: Mapping[str, Any],
+    scorer: Scorer,
+    space: SearchSpace,
+) -> Margin:
+    """Score every allowed term (at the submitted amount) and every allowed amount
+    (at the submitted term), to show how much room an approval has."""
+    amount = int(applicant["loan_amount"])
+    term = int(applicant["loan_term"])
+    terms = list(space.terms)
+    amounts = list(
+        range(space.amount_min, space.amount_max + space.amount_step, space.amount_step)
+    )
+
+    def scores_for(frame: pd.DataFrame) -> list[float]:
+        scored = scorer(_candidate_frame(applicant, frame))
+        return [float(value) for value in np.asarray(scored, dtype=float).reshape(-1)]
+
+    term_scores = scores_for(pd.DataFrame({"amount": [amount] * len(terms), "term": terms}))
+    amount_scores = scores_for(pd.DataFrame({"amount": amounts, "term": [term] * len(amounts)}))
+    return Margin(
+        terms=list(zip(terms, term_scores)),
+        amounts=list(zip(amounts, amount_scores)),
+        current_amount=amount,
+        current_term=term,
+    )

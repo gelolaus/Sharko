@@ -17,7 +17,7 @@ FIGURE_TITLES = {
     "scatter": "Original vs. Prediction-Flipping Loan Amount",
 }
 _ORDER = ("flip_rate", "distance", "configs", "scatter")
-_CAPTIONS = {
+FIGURE_CAPTIONS = {
     "flip_rate": (
         "How often each way found a change the model would approve. A taller "
         "bar means that way worked for more of the eligible loans."
@@ -99,7 +99,7 @@ def _table_rows(summary: pd.DataFrame) -> list[dict[str, str]]:
     return rows
 
 
-def _alt_texts(summary: pd.DataFrame) -> dict[str, str]:
+def figure_alt_texts(summary: pd.DataFrame) -> dict[str, str]:
     rates = ", ".join(
         f"{plain_way(str(name))} {_percent(row['flip_rate_pct'])}"
         for name, row in summary.iterrows()
@@ -125,19 +125,20 @@ def _alt_texts(summary: pd.DataFrame) -> dict[str, str]:
     }
 
 
-def _embed(path: Path) -> str:
-    data = base64.b64encode(path.read_bytes()).decode("ascii")
-    return f"data:image/png;base64,{data}"
-
-
-def _figure_html(key: str, path: Path, alt: str) -> str:
+def figure_html(key: str, data: bytes, alt: str) -> str:
+    """One captioned figure with its PNG embedded, so the page needs no other files."""
+    uri = "data:image/png;base64," + base64.b64encode(data).decode("ascii")
     return (
         "<figure>\n"
         f"<h3>{html.escape(FIGURE_TITLES[key])}</h3>\n"
-        f'<img src="{_embed(path)}" alt="{html.escape(alt, quote=True)}">\n'
-        f"<figcaption>{html.escape(_CAPTIONS[key])}</figcaption>\n"
+        f'<img src="{uri}" alt="{html.escape(alt, quote=True)}">\n'
+        f"<figcaption>{html.escape(FIGURE_CAPTIONS[key])}</figcaption>\n"
         "</figure>"
     )
+
+
+def _figure_html(key: str, path: Path, alt: str) -> str:
+    return figure_html(key, path.read_bytes(), alt)
 
 
 def write_dashboard(
@@ -147,7 +148,7 @@ def write_dashboard(
     path: Path,
 ) -> Path:
     """Write one self-contained HTML page with every figure and plain captions."""
-    alts = _alt_texts(summary)
+    alts = figure_alt_texts(summary)
     table_rows = "\n".join(
         "<tr><td>{way}</td><td class=\"num\">{eligible}</td>"
         "<td class=\"num\">{found}</td><td class=\"num\">{tries}</td></tr>".format(
