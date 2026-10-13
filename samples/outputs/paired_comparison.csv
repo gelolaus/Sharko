@@ -1,0 +1,16 @@
+pair,metric,mean_a,mean_b,n_both
+amount_only/term_only,normalized_distance,,,0
+amount_only/term_only,amount_change_abs,,,0
+amount_only/term_only,term_change_abs,,,0
+amount_only/term_only,score_change,,,0
+amount_only/term_only,configurations_evaluated,,,0
+amount_only/combined,normalized_distance,0.1091141001855287,0.22022521129663986,22
+amount_only/combined,amount_change_abs,4277272.7272727275,4277272.7272727275,22
+amount_only/combined,term_change_abs,0.0,2.0,22
+amount_only/combined,score_change,0.416044070432962,0.4139931045921428,22
+amount_only/combined,configurations_evaluated,85.54545454545455,137.27272727272728,22
+term_only/combined,normalized_distance,0.4876957494407158,0.4902467698488791,149
+term_only/combined,amount_change_abs,0.0,100000.0,149
+term_only/combined,term_change_abs,8.778523489932885,8.778523489932885,149
+term_only/combined,score_change,0.7552960928190106,0.7512769579156439,149
+term_only/combined,configurations_evaluated,5.926174496644295,966.4697986577181,149

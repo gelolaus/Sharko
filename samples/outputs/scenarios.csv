@@ -1,0 +1,28 @@
+dimension,band,low,high,strategy,eligible,flips,flip_rate_pct,mean_distance
+CIBIL credit score,lowest third,300.0,382.0,amount_only,104.0,6.0,5.769230769230769,0.07950680272108844
+CIBIL credit score,lowest third,300.0,382.0,term_only,104.0,50.0,48.07692307692308,0.5177777777777777
+CIBIL credit score,lowest third,300.0,382.0,combined,104.0,104.0,100.0,0.5187810701203559
+CIBIL credit score,middle third,383.0,472.0,amount_only,104.0,9.0,8.653846153846153,0.12414965986394558
+CIBIL credit score,middle third,383.0,472.0,term_only,104.0,50.0,48.07692307692308,0.4933333333333333
+CIBIL credit score,middle third,383.0,472.0,combined,104.0,104.0,100.0,0.48014782836211406
+CIBIL credit score,highest third,473.0,548.0,amount_only,104.0,7.0,6.730769230769231,0.11516034985422739
+CIBIL credit score,highest third,473.0,548.0,term_only,104.0,49.0,47.11538461538461,0.4512471655328798
+CIBIL credit score,highest third,473.0,548.0,combined,104.0,104.0,100.0,0.5386005363683934
+Annual income (INR),lowest third,200000.0,4100000.0,amount_only,104.0,4.0,3.8461538461538463,0.04974489795918367
+Annual income (INR),lowest third,200000.0,4100000.0,term_only,104.0,55.0,52.88461538461539,0.5353535353535354
+Annual income (INR),lowest third,200000.0,4100000.0,combined,104.0,104.0,100.0,0.5356870312227454
+Annual income (INR),middle third,4100000.0,7000000.0,amount_only,104.0,8.0,7.6923076923076925,0.12213010204081633
+Annual income (INR),middle third,4100000.0,7000000.0,term_only,104.0,47.0,45.19230769230769,0.49172576832151305
+Annual income (INR),middle third,4100000.0,7000000.0,combined,104.0,104.0,100.0,0.4933526295133438
+Annual income (INR),highest third,7000000.0,9900000.0,amount_only,104.0,10.0,9.615384615384617,0.12244897959183673
+Annual income (INR),highest third,7000000.0,9900000.0,term_only,104.0,47.0,45.19230769230769,0.42789598108747035
+Annual income (INR),highest third,7000000.0,9900000.0,combined,104.0,104.0,100.0,0.5084897741147741
+Loan amount / annual income,lowest third,1.5,2.473684210526316,amount_only,104.0,16.0,15.384615384615385,0.12308673469387756
+Loan amount / annual income,lowest third,1.5,2.473684210526316,term_only,104.0,14.0,13.461538461538462,0.5238095238095238
+Loan amount / annual income,lowest third,1.5,2.473684210526316,combined,104.0,104.0,100.0,0.530590441304727
+Loan amount / annual income,middle third,2.473684210526316,3.3369565217391304,amount_only,104.0,6.0,5.769230769230769,0.07185374149659864
+Loan amount / annual income,middle third,2.473684210526316,3.3369565217391304,term_only,104.0,39.0,37.5,0.4729344729344728
+Loan amount / annual income,middle third,2.473684210526316,3.3369565217391304,combined,104.0,104.0,100.0,0.5218662785627072
+Loan amount / annual income,highest third,3.34,4.0,amount_only,104.0,0.0,0.0,
+Loan amount / annual income,highest third,3.34,4.0,term_only,104.0,96.0,92.3076923076923,0.4884259259259259
+Loan amount / annual income,highest third,3.34,4.0,combined,104.0,104.0,100.0,0.48507271498342924
