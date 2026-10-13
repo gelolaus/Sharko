@@ -60,6 +60,12 @@ from sharko.robustness import (
 )
 from sharko.render import PLAIN_WAYS, STRATEGY_LABELS, format_check_result
 from sharko.report import figure_bytes, generate_report
+from sharko.scenarios import (
+    PROFILE_DIMENSIONS,
+    format_value,
+    pick_examples,
+    profile_breakdown,
+)
 from sharko.search import Strategy, run_all_strategies
 from sharko.trace import build_trace, margin_scan
 
@@ -638,6 +644,103 @@ def _robustness(args: argparse.Namespace) -> int:
     return 0
 
 
+def _example_lines(label: str, rows: pd.DataFrame, loan: pd.Series) -> list[str]:
+    lines = heading(f"{label}")
+    lines.extend(
+        wrap(
+            f"CIBIL {int(loan['cibil_score'])}, income "
+            f"{int(loan['income_annum']):,} INR, asked for "
+            f"{int(loan['loan_amount']):,} INR over {int(loan['loan_term'])} years.",
+            indent=2,
+        )
+    )
+    lines.append(f"  Approval chance as asked: {chance(rows.iloc[0]['baseline_score'])}.")
+    lines.append(f"  {'Way':<17}{'New amount':>14}{'Term':>8}{'Chance':>9}{'Distance':>10}")
+    for strategy in Strategy:
+        row = rows.loc[rows["strategy"] == strategy.value].iloc[0]
+        way = PLAIN_WAYS[strategy]
+        if not bool(row["flip_found"]):
+            lines.append(f"  {way:<17}{'none found':>14}")
+            continue
+        lines.append(
+            f"  {way:<17}{int(row['candidate_amount']):>14,}"
+            f"{int(row['candidate_term']):>7}y{chance(row['candidate_score']):>9}"
+            f"{row['normalized_distance']:>10.3f}"
+        )
+    return lines
+
+
+def _print_breakdown(table: pd.DataFrame) -> None:
+    for key, title in PROFILE_DIMENSIONS:
+        part = table[table["dimension"] == title]
+        if part.empty:
+            continue
+        for line in heading(f"{title}: approved option found, % of loans"):
+            print(line)
+        print(f"  {'Group (range)':<30}{'Loans':>6}{'Amount only':>13}{'Term only':>11}{'Both':>8}")
+        for band, group in part.groupby("band", sort=False):
+            rate = group.set_index("strategy")["flip_rate_pct"]
+            first = group.iloc[0]
+            text = (
+                f"{band} ({format_value(key, first['low'])}-"
+                f"{format_value(key, first['high'])})"
+            )
+            print(
+                f"  {text:<30}{int(first['eligible']):>6}"
+                f"{rate.get('amount_only', float('nan')):>12.1f}%"
+                f"{rate.get('term_only', float('nan')):>10.1f}%"
+                f"{rate.get('combined', float('nan')):>7.1f}%"
+            )
+
+
+def _scenarios(args: argparse.Namespace) -> int:
+    loaded = _load_split(Path(args.data), Path(args.model))
+    if isinstance(loaded, int):
+        return loaded
+    bundle, test = loaded
+
+    def scorer(frame: pd.DataFrame):
+        return approval_scores(bundle.pipeline, frame)
+
+    _banner("Scenarios across applicant profiles")
+    print(CURRENCY_NOTE)
+    for line in wrap(
+        "Sharko takes the held-out loans that the data marks Rejected and "
+        "the model also rejects, runs all 3 searches on each, and then "
+        "compares the 3 ways for different kinds of applicant. It may take "
+        "a little while."
+    ):
+        print(line)
+    results = run_experiment(test, scorer, bundle.search_space)
+    if results.empty:
+        print("No eligible loans, so there are no scenarios to compare.")
+        return 0
+    loans = test.set_index("loan_id")
+    for label, loan_id in pick_examples(results, test):
+        rows = results.loc[results["loan_id"] == loan_id]
+        for line in _example_lines(label, rows, loans.loc[loan_id]):
+            print(line)
+    table = profile_breakdown(results, test)
+    _print_breakdown(table)
+    out = Path(args.out)
+    out.mkdir(parents=True, exist_ok=True)
+    table.to_csv(out / "scenarios.csv", index=False, lineterminator="\n", encoding="utf-8")
+    print("")
+    print(f"Saved to {out / 'scenarios.csv'}")
+    for line in wrap(
+        "How to read this: a bigger gap between the 3 ways, or between "
+        "groups, shows where the model is most sensitive to the loan "
+        "amount and term. It is a pattern in past data, not advice."
+    ):
+        print(line)
+    print("")
+    print("IMPORTANT")
+    print("-" * WIDTH)
+    print(DISCLAIMER)
+    print(LIMITATIONS_NOTE)
+    return 0
+
+
 def _tutorial(args: argparse.Namespace) -> int:
     print(tutorial())
     return 0
@@ -809,6 +912,24 @@ def build_parser() -> argparse.ArgumentParser:
         help="directory for the two robustness CSV files",
     )
     robustness.set_defaults(func=_robustness)
+
+    scenarios = sub.add_parser(
+        "scenarios",
+        help="for analysts: compare the 3 ways across applicant profiles",
+        description=(
+            "Show worked examples and compare the 3 ways of changing the loan "
+            "for low, middle and high CIBIL score, income and loan size. "
+            + CURRENCY_NOTE
+        ),
+    )
+    _add_data_model(scenarios)
+    scenarios.add_argument(
+        "--out",
+        type=Path,
+        default=DEFAULT_OUT,
+        help="directory for scenarios.csv",
+    )
+    scenarios.set_defaults(func=_scenarios)
 
     report = sub.add_parser(
         "report",
