@@ -18,6 +18,7 @@ from sharko.config import (
     DEFAULT_REPORTS,
     FEATURES,
     REJECTED,
+    SEED,
 )
 from sharko.data import load_dataset, split_dataset
 from sharko.experiment import run_experiment, summarize
@@ -50,6 +51,13 @@ from sharko.model import (
     train_model,
 )
 from sharko.plain import WIDTH, chance, heading, wrap
+from sharko.robustness import (
+    FLIP_COLUMNS,
+    seed_check,
+    sensitivity,
+    spread,
+    without_negative_assets,
+)
 from sharko.render import PLAIN_WAYS, STRATEGY_LABELS, format_check_result
 from sharko.report import figure_bytes, generate_report
 from sharko.search import Strategy, run_all_strategies
@@ -530,6 +538,106 @@ def _report(args: argparse.Namespace) -> int:
     return 0
 
 
+def _flip_text(row) -> str:
+    parts = []
+    for strategy, column in zip(Strategy, FLIP_COLUMNS):
+        value = row[column]
+        text = "n/a" if pd.isna(value) else f"{value:.1f}%"
+        parts.append(f"{PLAIN_WAYS[strategy].lower()} {text}")
+    return ", ".join(parts)
+
+
+def _print_sensitivity(table: pd.DataFrame) -> None:
+    for line in heading("1. With and without the loans that have a negative asset value"):
+        print(line)
+    for name, row in table.iterrows():
+        print(f"  {name} ({int(row['records']):,} loans, {row['model']})")
+        print(
+            f"    accuracy {row['accuracy']:.4f}  F1 {row['f1']:.4f}  "
+            f"ROC-AUC {row['roc_auc']:.4f}"
+        )
+        for line in wrap(
+            f"approved option found on {int(row['eligible'])} loans: "
+            + _flip_text(row),
+            indent=4,
+            hang=2,
+        ):
+            print(line)
+
+
+def _print_seeds(table: pd.DataFrame) -> None:
+    for line in heading("2. The same run with different random splits (seeds)"):
+        print(line)
+    print(
+        f"  {'Seed':>5}{'Accuracy':>10}{'ROC-AUC':>9}"
+        f"{'Amount only':>13}{'Term only':>11}{'Both':>7}"
+    )
+    for seed, row in table.iterrows():
+        flips = [row[column] for column in FLIP_COLUMNS]
+        print(
+            f"  {seed:>5}{row['accuracy']:>10.4f}{row['roc_auc']:>9.4f}"
+            f"{flips[0]:>12.1f}%{flips[1]:>10.1f}%{flips[2]:>6.1f}%"
+        )
+    stats = spread(table)
+    print("")
+    print("  Across all seeds (approved option found, in %):")
+    for label, column in zip(("amount only", "term only", "both"), FLIP_COLUMNS):
+        print(
+            f"    {label:<12} mean {stats.loc['mean', column]:.1f}, "
+            f"std {stats.loc['std', column]:.1f}, "
+            f"range {stats.loc['min', column]:.1f} to {stats.loc['max', column]:.1f}"
+        )
+    print(
+        f"    accuracy     mean {stats.loc['mean', 'accuracy']:.4f}, "
+        f"std {stats.loc['std', 'accuracy']:.4f}"
+    )
+
+
+def _robustness(args: argparse.Namespace) -> int:
+    data = Path(args.data)
+    if not data.is_file():
+        return _fail(missing_data_message(data))
+    if args.seeds < 2:
+        return _fail("--seeds must be 2 or more, so the runs can be compared.")
+    frame = load_dataset(data)
+    negatives = len(frame) - len(without_negative_assets(frame))
+    seeds = [SEED + offset for offset in range(args.seeds)]
+    _banner("Robustness checks")
+    print(CURRENCY_NOTE)
+    for line in wrap(
+        "Each run trains the model again and runs all 3 searches, so this "
+        f"takes about a minute per run ({args.seeds + 1} runs here). "
+        f"{negatives} loans in the data have a negative residential asset "
+        "value. They are normally kept as they are."
+    ):
+        print(line)
+    print("Working...", file=sys.stderr)
+    sensitive = sensitivity(frame)
+    seeded = seed_check(frame, seeds)
+    _print_sensitivity(sensitive)
+    _print_seeds(seeded)
+    out = Path(args.out)
+    out.mkdir(parents=True, exist_ok=True)
+    sensitive.to_csv(out / "robustness_sensitivity.csv", lineterminator="\n", encoding="utf-8")
+    seeded.to_csv(out / "robustness_seeds.csv", lineterminator="\n", encoding="utf-8")
+    print("")
+    print(f"Saved to {out}: robustness_sensitivity.csv, robustness_seeds.csv")
+    print("")
+    for line in wrap(
+        "How to read this: if the numbers barely move, the results do not "
+        "depend on one lucky split or on those few loans. A big move would "
+        "be a warning. A high chance of approval is still a model estimate "
+        "and never a promise that a lender will approve a loan."
+    ):
+        print(line)
+    print("")
+    print("IMPORTANT")
+    print("-" * WIDTH)
+    print(DISCLAIMER)
+    print(LIMITATIONS_NOTE)
+    return 0
+
+
 def _tutorial(args: argparse.Namespace) -> int:
     print(tutorial())
     return 0
@@ -672,6 +780,35 @@ def build_parser() -> argparse.ArgumentParser:
         help="directory for experiment_results.csv",
     )
     experiment.set_defaults(func=_experiment)
+
+    robustness = sub.add_parser(
+        "robustness",
+        help="for analysts: test how steady the results are",
+        description=(
+            "Compare the results with and without the loans that have a "
+            "negative residential asset value, and repeat the run with "
+            "different random splits. Takes a few minutes. " + CURRENCY_NOTE
+        ),
+    )
+    robustness.add_argument(
+        "--data",
+        type=Path,
+        default=DEFAULT_DATA,
+        help="path to loan_approval_dataset.csv",
+    )
+    robustness.add_argument(
+        "--seeds",
+        type=int,
+        default=5,
+        help="how many random splits to try (default: 5)",
+    )
+    robustness.add_argument(
+        "--out",
+        type=Path,
+        default=DEFAULT_OUT,
+        help="directory for the two robustness CSV files",
+    )
+    robustness.set_defaults(func=_robustness)
 
     report = sub.add_parser(
         "report",
