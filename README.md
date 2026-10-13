@@ -182,6 +182,8 @@ These folders are generated and git-ignored.
 - `Reports/` - your reports (`FirstName_LastName_Results.html`) and the charts page (`Experiment_Report.html`)
 - `outputs/` - `experiment_results.csv`, `summary.csv`, `paired_comparison.csv`, `scenarios.csv`, `robustness_sensitivity.csv`, `robustness_seeds.csv` and the charts (`.png`)
 
+A copy of one full run (terminal output, CSVs, charts and example reports) is kept in `samples/`, so you can see the results without running anything. See `samples/README.md`.
+
 ## For analysts
 
 - The data is split 80/20 (stratified on `loan_status`, seed 42). Search limits, scaling and model choice use the 80% training part only. The model is picked by cross-validated ROC-AUC from logistic regression, random forest and gradient boosting.
@@ -189,6 +191,10 @@ These folders are generated and git-ignored.
 - Options are ordered by normalized distance, then amount, then term. Ties are decided on the exact integer numerator, never on floats.
 - Sharko never names one "best" way with a weighted score. It reports the three ways side by side.
 - Every result shows the original and new amount and term, the model score and the distance, plus the disclaimer.
+
+## Documentation
+
+`Sharko_Documentation.pdf` is the full guide: how it works, every command, how to read the results, how steady and reliable they are, and how the code is organized. Its source is `documentation/sharko_documentation.html`. To rebuild the PDF, print that file to PDF from Edge or Chrome with no headers or footers.
 
 ## Ethics and limitations
 

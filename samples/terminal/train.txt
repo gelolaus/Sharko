@@ -1,0 +1,29 @@
+
+========================================================================
+Training complete
+========================================================================
+The amounts used here are in Indian Rupees (INR).
+Sharko tried 3 kinds of model and kept the one that scored best on a
+practice test (cross-validation) using only the training loans.
+
+Chosen model: gradient_boosting
+Practice-test scores (CV AUC, 1 = perfect):
+  logistic_regression: 0.9665
+  random_forest: 0.9975
+  gradient_boosting: 0.9979
+
+Final check on loans the model never saw (20% held back):
+  accuracy  0.9824  share of loans predicted correctly
+  precision 0.9796  when it says Approved, how often it is right
+  recall    0.9925  share of truly Approved loans it caught
+  F1        0.9860  balance of precision and recall
+  ROC-AUC   0.9983  ranks Approved above Rejected (1 = perfect)
+  Brier     0.0144  Brier score, lower is better (0 = perfect)
+  Hits and misses on the test loans:
+    Truly Rejected: 312 right, 11 wrong
+    Truly Approved: 527 right, 4 wrong
+
+Loan limits learned from the data:
+  amounts 300,000 to 39,500,000 INR (steps of 100,000); terms 2, 4, 6, 8, 10, 12, 14, 16, 18, 20 years
+
+Next step: python -m sharko check --example

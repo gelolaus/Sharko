@@ -1,0 +1,102 @@
+
+Using the built-in example application. Change any answer with its flag,
+for example --cibil-score 800.
+Checking the application...
+Not approved as submitted. Looking for the smallest approved change...
+
+========================================================================
+SHARKO RESULT
+========================================================================
+The amounts used here are in Indian Rupees (INR).
+
+RESULT: Not approved as submitted
+------------------------------------------------------------------------
+  The model gives this application a 0.3% chance of approval. It needs
+  50.0% or more to be approved.
+
+SMALLEST CHANGE THAT WOULD BE APPROVED
+------------------------------------------------------------------------
+  Change both the amount and the term:
+    Loan amount      12,200,000 -> 14,600,000 INR
+    Loan term        8 -> 4 years
+    Approval chance  0.3% -> 54.1% (approved)
+  Note: a bigger loan is not a safer loan. The model only follows
+  patterns in past loans, so treat this as a pattern, not as advice.
+
+HOW SHARKO FOUND THIS
+------------------------------------------------------------------------
+  1. Kept everything else about the applicant the same. Only the loan
+     amount and the loan term were allowed to change.
+  2. Listed the allowed amount and term options, closest to the original
+     request first.
+  3. Asked the model to score each option, one by one. Sharko stops at
+     the first option with a 50.0% chance or more. For the closest way,
+     that was try 363.
+  4. Did this 3 ways (amount only, term only, both) and compared them.
+
+THE 3 WAYS COMPARED
+------------------------------------------------------------------------
+  Way              Result   Options tried
+  Amount only      none               392
+  Term only        none                 9
+  Amount and term  found              363  <- closest
+
+IMPORTANT
+------------------------------------------------------------------------
+Model-generated what-if result. This is not a lender decision,
+a loan offer, or financial advice. A high chance of approval is
+an estimate, not a guarantee that a real lender would approve.
+Limitations: the model reflects patterns in a public dataset that
+lacks economic variables (e.g. inflation, interest rates) and
+demographic detail. If no approved option is found, that means none
+was found within the searched amounts and terms, not that none exists.
+Scores can change with a different data split; run
+python -m sharko robustness to see by how much.
+
+You can stop reading here. The rest is detail for analysts.
+
+TECHNICAL DETAILS (for analysts)
+------------------------------------------------------------------------
+Application as entered:
+  Education: Graduate
+  Self-employed: No
+  Number of dependents: 2
+  Annual income (INR): 4,100,000
+  CIBIL credit score: 417
+  Residential assets value (INR): 2,700,000
+  Commercial assets value (INR): 2,200,000
+  Luxury assets value (INR): 8,800,000
+  Bank asset value (INR): 3,300,000
+  Loan amount (INR): 12,200,000
+  Loan term (years): 8
+Baseline: Rejected (approval score 0.003, cut-off 0.500).
+Search results (all other fields stay fixed):
+  Amount-only: no flip found; configurations evaluated: 392
+  Term-only: no flip found; configurations evaluated: 9
+  Combined: amount 12,200,000 -> 14,600,000, term 8 -> 4 years
+    distance 0.2834, score 0.003 -> 0.541, configurations evaluated: 363
+Closest by distance: Combined
+Search space: amounts 300,000-39,500,000 INR in steps of 100,000; terms
+  2, 4, 6, 8, 10, 12, 14, 16, 18, 20 years.
+Model quality on held-out test data:
+  accuracy 0.982, precision 0.980, recall 0.992
+  F1 0.986, ROC-AUC 0.998
+Words used:
+  - approval score / chance: the model's estimate from 0 to 1, shown as
+    a percent. 0.5 (50%) or more counts as approved.
+  - distance: how far an option is from the original amount and term. 0
+    means no change; bigger means a bigger change.
+  - configurations evaluated: how many options were scored before Sharko
+    stopped.
+  - accuracy, precision, recall, F1, ROC-AUC: how well the model
+    predicts loans it never saw while learning. Closer to 1 is better.
+
+REPORT SAVED
+------------------------------------------------------------------------
+  Your report has your answers, the result, and every try the search
+  made, step by step. It also has the paper's charts for all the test
+  loans.
+  Folder: <project folder>\Reports
+  File:   Example_Applicant_Results.html
+  Open it by double-clicking the file, or in any web browser.
+  Tip: add --open to open it automatically next time.

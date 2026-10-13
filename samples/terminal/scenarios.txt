@@ -1,0 +1,85 @@
+
+========================================================================
+Scenarios across applicant profiles
+========================================================================
+The amounts used here are in Indian Rupees (INR).
+Sharko takes the held-out loans that the data marks Rejected and the
+model also rejects, runs all 3 searches on each, and then compares the 3
+ways for different kinds of applicant. It may take a little while.
+
+Lowest CIBIL score
+------------------------------------------------------------------------
+  CIBIL 300, income 7,500,000 INR, asked for 17,000,000 INR over 8
+  years.
+  Approval chance as asked: 0.1%.
+  Way                  New amount    Term   Chance  Distance
+  Amount only          none found
+  Term only            none found
+  Amount and term      23,200,000      4y    52.0%     0.380
+
+Middle CIBIL score
+------------------------------------------------------------------------
+  CIBIL 434, income 7,300,000 INR, asked for 18,300,000 INR over 8
+  years.
+  Approval chance as asked: 0.2%.
+  Way                  New amount    Term   Chance  Distance
+  Amount only          none found
+  Term only            none found
+  Amount and term      20,600,000      4y    52.1%     0.281
+
+Highest CIBIL score
+------------------------------------------------------------------------
+  CIBIL 548, income 3,600,000 INR, asked for 13,700,000 INR over 10
+  years.
+  Approval chance as asked: 1.7%.
+  Way                  New amount    Term   Chance  Distance
+  Amount only          none found
+  Term only            13,700,000      4y    90.4%     0.333
+  Amount and term      13,600,000      4y    90.4%     0.336
+
+Largest loan for the income
+------------------------------------------------------------------------
+  CIBIL 507, income 1,500,000 INR, asked for 6,000,000 INR over 6 years.
+  Approval chance as asked: 0.4%.
+  Way                  New amount    Term   Chance  Distance
+  Amount only          none found
+  Term only             6,000,000      4y    73.2%     0.111
+  Amount and term       5,900,000      4y    73.2%     0.114
+
+CIBIL credit score: approved option found, % of loans
+------------------------------------------------------------------------
+  Group (range)                  Loans  Amount only  Term only    Both
+  lowest third (300-382)           104         5.8%      48.1%  100.0%
+  middle third (383-472)           104         8.7%      48.1%  100.0%
+  highest third (473-548)          104         6.7%      47.1%  100.0%
+
+Annual income (INR): approved option found, % of loans
+------------------------------------------------------------------------
+  Group (range)                  Loans  Amount only  Term only    Both
+  lowest third (0.2M-4.1M)         104         3.8%      52.9%  100.0%
+  middle third (4.1M-7.0M)         104         7.7%      45.2%  100.0%
+  highest third (7.0M-9.9M)        104         9.6%      45.2%  100.0%
+
+Loan amount / annual income: approved option found, % of loans
+------------------------------------------------------------------------
+  Group (range)                  Loans  Amount only  Term only    Both
+  lowest third (1.50-2.47)         104        15.4%      13.5%  100.0%
+  middle third (2.47-3.34)         104         5.8%      37.5%  100.0%
+  highest third (3.34-4.00)        104         0.0%      92.3%  100.0%
+
+Saved to outputs\scenarios.csv
+How to read this: a bigger gap between the 3 ways, or between groups,
+shows where the model is most sensitive to the loan amount and term. It
+is a pattern in past data, not advice.
+
+IMPORTANT
+------------------------------------------------------------------------
+Model-generated what-if result. This is not a lender decision,
+a loan offer, or financial advice. A high chance of approval is
+an estimate, not a guarantee that a real lender would approve.
+Limitations: the model reflects patterns in a public dataset that
+lacks economic variables (e.g. inflation, interest rates) and
+demographic detail. If no approved option is found, that means none
+was found within the searched amounts and terms, not that none exists.
+Scores can change with a different data split; run
+python -m sharko robustness to see by how much.

@@ -1,0 +1,22 @@
+
+========================================================================
+Report
+========================================================================
+Writing summary tables and figures...
+Tables and charts saved in outputs:
+  summary.csv
+      one row per way, with all the averages
+  paired_comparison.csv
+      ways compared on the loans both could fix
+  flip_rate_by_strategy.png
+      how often each way found an approved option
+  distance_by_strategy.png
+      how big a change each way needed
+  configs_evaluated_by_strategy.png
+      how many options each way tried
+  amount_original_vs_flip.png
+      original loan amount vs the new one
+
+All charts on one page (open it in a browser), saved in Reports:
+  Experiment_Report.html
+To see the charts: python -m sharko report --open

@@ -1,0 +1,39 @@
+
+========================================================================
+Batch experiment
+========================================================================
+The amounts used here are in Indian Rupees (INR).
+This tests many loans at once. It takes the held-out loans that the data
+marks Rejected and the model also rejects (the "eligible" loans) and
+runs all 3 searches on each. It may take a while.
+Eligible loans: 312
+
+Results by way of changing the loan
+------------------------------------------------------------------------
+  Way               Loans   Approved option found  Median tries
+  Amount only         312                    7.1%           392
+  Term only           312                   47.8%             9
+  Amount and term     312                  100.0%         1,053
+
+How to read this table
+  - Loans: how many loans the search was run on.
+  - Approved option found: share of those loans where the search found a
+    change the model would approve.
+  - Median tries: the typical number of options checked before stopping.
+    Fewer means a quicker answer.
+
+Full results saved to outputs\experiment_results.csv
+
+Next step: python -m sharko report --open
+
+IMPORTANT
+------------------------------------------------------------------------
+Model-generated what-if result. This is not a lender decision,
+a loan offer, or financial advice. A high chance of approval is
+an estimate, not a guarantee that a real lender would approve.
+Limitations: the model reflects patterns in a public dataset that
+lacks economic variables (e.g. inflation, interest rates) and
+demographic detail. If no approved option is found, that means none
+was found within the searched amounts and terms, not that none exists.
+Scores can change with a different data split; run
+python -m sharko robustness to see by how much.

@@ -1,0 +1,50 @@
+
+========================================================================
+Evaluation
+========================================================================
+The amounts used here are in Indian Rupees (INR).
+Testing the saved model on the 20% of loans it never saw...
+  accuracy  0.9824  share of loans predicted correctly
+  precision 0.9796  when it says Approved, how often it is right
+  recall    0.9925  share of truly Approved loans it caught
+  F1        0.9860  balance of precision and recall
+  ROC-AUC   0.9983  ranks Approved above Rejected (1 = perfect)
+  Brier     0.0144  Brier score, lower is better (0 = perfect)
+  Hits and misses on the test loans:
+    Truly Rejected: 312 right, 11 wrong
+    Truly Approved: 527 right, 4 wrong
+
+Do the percentages mean what they say?
+------------------------------------------------------------------------
+  Loans are grouped by the chance of approval the model gave them. If
+  the model is reliable, the share that were truly Approved is close to
+  what it said.
+  Chance given     Loans   Model said   Truly approved
+  0% to 10%          292         0.4%             0.0%
+  10% to 20%          10        13.8%             0.0%
+  20% to 30%           4        25.2%            25.0%
+  30% to 40%           7        34.8%            14.3%
+  40% to 50%           3        46.1%            66.7%
+  50% to 60%           2        53.6%            50.0%
+  60% to 70%           6        65.2%           100.0%
+  70% to 80%          13        76.1%            76.9%
+  80% to 90%           9        85.0%            44.4%
+  90% to 100%        508        99.5%            99.6%
+  Average gap between the two: 1.3 percentage points.
+  Groups with few loans are noisy, so do not read much into one row. A
+  model can rank loans well and still be a little over- or under-
+  confident.
+
+Next step: python -m sharko check --example
+
+IMPORTANT
+------------------------------------------------------------------------
+Model-generated what-if result. This is not a lender decision,
+a loan offer, or financial advice. A high chance of approval is
+an estimate, not a guarantee that a real lender would approve.
+Limitations: the model reflects patterns in a public dataset that
+lacks economic variables (e.g. inflation, interest rates) and
+demographic detail. If no approved option is found, that means none
+was found within the searched amounts and terms, not that none exists.
+Scores can change with a different data split; run
+python -m sharko robustness to see by how much.

@@ -1,0 +1,741 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Sharko - Documentation and User Guide</title>
+<!--
+Source of Sharko_Documentation.pdf. To rebuild the PDF, print this file to PDF with
+Microsoft Edge or Chrome (no headers or footers, A4, background graphics on). The page
+numbers in the contents are filled in after printing. Charts come from ../samples/outputs.
+-->
+<style>
+  @page {
+    size: A4;
+    margin: 20mm 18mm 22mm 18mm;
+    @bottom-left { content: "Sharko - Documentation and User Guide"; font: 8.5pt Arial, sans-serif; color: #555; }
+    @bottom-right { content: "Page " counter(page); font: 8.5pt Arial, sans-serif; color: #555; }
+  }
+  @page :first { margin: 0; @bottom-left { content: none; } @bottom-right { content: none; } }
+  :root { --blue: #0b5cad; --ink: #1d2733; --muted: #5b6673; --line: #cdd6e0; --soft: #eef4fb; }
+  * { box-sizing: border-box; }
+  html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  body { font: 10pt/1.45 Arial, "Segoe UI", sans-serif; color: var(--ink); margin: 0; }
+  h1 { font-size: 20pt; color: var(--blue); margin: 0 0 8pt; padding-bottom: 5pt; border-bottom: 2pt solid var(--blue); break-before: page; }
+  h1 { break-after: avoid; }
+  #s3, #s9, #s10, #s11 { break-before: auto; margin-top: 24pt; }
+  pre.split { break-inside: auto; }
+  h2 { font-size: 12.5pt; color: var(--blue); margin: 16pt 0 5pt; break-after: avoid; }
+  h3 { font-size: 10.5pt; margin: 12pt 0 4pt; break-after: avoid; }
+  p { margin: 0 0 7pt; }
+  ul { margin: 0 0 8pt; padding-left: 16pt; }
+  li { margin-bottom: 3pt; }
+  code, pre { font-family: Consolas, "Courier New", monospace; }
+  code { background: #f1f4f8; padding: 0 2pt; font-size: 9pt; }
+  pre { background: #f5f7fa; border: 0.5pt solid var(--line); border-left: 3pt solid var(--blue); padding: 6pt 8pt; font-size: 8pt; line-height: 1.3; margin: 4pt 0 9pt; white-space: pre; break-inside: avoid; }
+  pre.cmd { background: #17212b; color: #f2f6fa; border-left-color: #6fb1ff; font-size: 9pt; }
+  table { border-collapse: collapse; width: 100%; margin: 4pt 0 10pt; font-size: 9pt; break-inside: auto; }
+  th, td { border: 0.5pt solid var(--line); padding: 3.5pt 6pt; text-align: left; vertical-align: top; }
+  th { background: var(--blue); color: #fff; font-weight: 600; }
+  tr { break-inside: avoid; }
+  tbody tr:nth-child(even) td { background: #f8fafc; }
+  td.num, th.num { text-align: right; }
+  .callout { background: var(--soft); border-left: 3pt solid var(--blue); padding: 6pt 9pt; margin: 6pt 0 10pt; break-inside: avoid; }
+  .callout b.k { display: block; color: var(--blue); margin-bottom: 2pt; }
+  .warn { background: #fff6e5; border-left-color: #d98a00; }
+  .warn b.k { color: #a76400; }
+  .note { color: var(--muted); font-size: 8.5pt; }
+  .steps { display: flex; gap: 6pt; margin: 6pt 0 4pt; }
+  .step { flex: 1; border: 0.5pt solid var(--line); border-top: 3pt solid var(--blue); padding: 6pt; font-size: 8.5pt; break-inside: avoid; }
+  .step b { display: block; color: var(--blue); font-size: 10pt; margin-bottom: 2pt; }
+  .bar { text-align: center; font-size: 8.5pt; color: var(--muted); margin-bottom: 8pt; }
+  .map { margin: 6pt 0 10pt; }
+  .map .row { display: flex; gap: 6pt; margin-bottom: 6pt; align-items: stretch; }
+  .map .lab { width: 62pt; font-weight: 700; color: var(--blue); font-size: 8.5pt; align-self: center; }
+  .map .box { flex: 1; border: 0.5pt solid var(--line); background: var(--soft); padding: 4pt 5pt; font-size: 8pt; text-align: center; }
+  .map .box b { display: block; font-size: 8.5pt; }
+  figure { margin: 8pt 0; break-inside: avoid; text-align: center; }
+  figure img { max-width: 100%; max-height: 105mm; border: 0.5pt solid var(--line); }
+  figcaption { font-size: 8.5pt; color: var(--muted); text-align: left; margin-top: 3pt; }
+  .cover { height: 297mm; padding: 0 22mm; position: relative; break-after: page; }
+  .cover .band { position: absolute; top: 0; left: 0; right: 0; height: 22mm; background: var(--blue); }
+  .cover .inner { position: absolute; top: 95mm; left: 22mm; right: 22mm; }
+  .cover h1c { display: block; font-size: 46pt; font-weight: 700; color: var(--blue); }
+  .cover .sub { font-size: 18pt; font-weight: 700; margin: 4pt 0 2pt; }
+  .cover .sub2 { font-size: 13pt; color: var(--muted); margin-bottom: 22pt; }
+  .cover p { font-size: 10.5pt; color: var(--muted); }
+  .toc { list-style: none; padding: 0; margin: 0; }
+  .toc li { margin: 0; }
+  .toc a { display: flex; color: var(--ink); text-decoration: none; padding: 1.4pt 0; }
+  .toc a .t { flex: none; }
+  .toc a .d { flex: 1; border-bottom: 0.5pt dotted #99a5b3; margin: 0 4pt 3pt; }
+  .toc .top a { font-weight: 700; margin-top: 5pt; }
+  .toc .sub a { padding-left: 14pt; font-size: 9pt; }
+  .toc-title { font-size: 20pt; color: var(--blue); margin: 0 0 10pt; padding-bottom: 5pt; border-bottom: 2pt solid var(--blue); }
+</style>
+</head>
+<body>
+
+<section class="cover">
+  <div class="band"></div>
+  <div class="inner">
+    <span class="h1c" style="display:block;font-size:46pt;font-weight:700;color:#0b5cad">Sharko</span>
+    <div class="sub">Loan What-If Tool</div>
+    <div class="sub2">Documentation and User Guide</div>
+    <p>What it does, how to run it, how to read the results, how steady and reliable they are, and how the code is organized.</p>
+    <p>MODESIM course project (SF241)<br>October 2026</p>
+    <p>Amounts in this document are in Indian Rupees (INR).</p>
+  </div>
+</section>
+
+<div class="toc-title" style="break-before:avoid">Contents</div>
+<ul class="toc">
+  <li class="top"><a href="#s1"><span class="t">1. What is Sharko?</span><span class="d"></span><span class="pg" data-id="s1">3</span></a></li>
+  <li class="sub"><a href="#s1a"><span class="t">A worked example</span><span class="d"></span><span class="pg" data-id="s1a">3</span></a></li>
+  <li class="sub"><a href="#s1b"><span class="t">What Sharko is not</span><span class="d"></span><span class="pg" data-id="s1b">3</span></a></li>
+  <li class="top"><a href="#s2"><span class="t">2. How Sharko works</span><span class="d"></span><span class="pg" data-id="s2">4</span></a></li>
+  <li class="sub"><a href="#s2a"><span class="t">What stays fixed and what can change</span><span class="d"></span><span class="pg" data-id="s2a">4</span></a></li>
+  <li class="sub"><a href="#s2b"><span class="t">The three ways of searching</span><span class="d"></span><span class="pg" data-id="s2b">4</span></a></li>
+  <li class="sub"><a href="#s2c"><span class="t">How Sharko decides what is "closest"</span><span class="d"></span><span class="pg" data-id="s2c">4</span></a></li>
+  <li class="top"><a href="#s3"><span class="t">3. Quick start</span><span class="d"></span><span class="pg" data-id="s3">5</span></a></li>
+  <li class="sub"><a href="#s3a"><span class="t">How long things take</span><span class="d"></span><span class="pg" data-id="s3a">6</span></a></li>
+  <li class="top"><a href="#s4"><span class="t">4. Using the check command</span><span class="d"></span><span class="pg" data-id="s4">8</span></a></li>
+  <li class="sub"><a href="#s4a"><span class="t">The questions</span><span class="d"></span><span class="pg" data-id="s4a">8</span></a></li>
+  <li class="sub"><a href="#s4b"><span class="t">Skipping the questions with flags</span><span class="d"></span><span class="pg" data-id="s4b">8</span></a></li>
+  <li class="sub"><a href="#s4c"><span class="t">Reading the result in the terminal</span><span class="d"></span><span class="pg" data-id="s4c">9</span></a></li>
+  <li class="top"><a href="#s5"><span class="t">5. Your report file</span><span class="d"></span><span class="pg" data-id="s5">12</span></a></li>
+  <li class="top"><a href="#s6"><span class="t">6. The experiment and the charts</span><span class="d"></span><span class="pg" data-id="s6">13</span></a></li>
+  <li class="sub"><a href="#s6a"><span class="t">The four charts and how to read them</span><span class="d"></span><span class="pg" data-id="s6a">13</span></a></li>
+  <li class="sub"><a href="#s6b"><span class="t">Files the experiment and report write</span><span class="d"></span><span class="pg" data-id="s6b">15</span></a></li>
+  <li class="top"><a href="#s7"><span class="t">7. How steady and how reliable are the results?</span><span class="d"></span><span class="pg" data-id="s7">16</span></a></li>
+  <li class="sub"><a href="#s7a"><span class="t">Negative assets and different random splits</span><span class="d"></span><span class="pg" data-id="s7a">16</span></a></li>
+  <li class="sub"><a href="#s7b"><span class="t">Different kinds of applicant</span><span class="d"></span><span class="pg" data-id="s7b">16</span></a></li>
+  <li class="sub"><a href="#s7c"><span class="t">Do the percentages mean what they say?</span><span class="d"></span><span class="pg" data-id="s7c">17</span></a></li>
+  <li class="sub"><a href="#s7d"><span class="t">Sample outputs</span><span class="d"></span><span class="pg" data-id="s7d">18</span></a></li>
+  <li class="top"><a href="#s8"><span class="t">8. Command reference</span><span class="d"></span><span class="pg" data-id="s8">19</span></a></li>
+  <li class="sub"><a href="#s8a"><span class="t">What the scores printed by train and evaluate mean</span><span class="d"></span><span class="pg" data-id="s8a">19</span></a></li>
+  <li class="sub"><a href="#s8b"><span class="t">Exit codes</span><span class="d"></span><span class="pg" data-id="s8b">20</span></a></li>
+  <li class="top"><a href="#s9"><span class="t">9. How the code is organized</span><span class="d"></span><span class="pg" data-id="s9">20</span></a></li>
+  <li class="sub"><a href="#s9a"><span class="t">File by file</span><span class="d"></span><span class="pg" data-id="s9a">20</span></a></li>
+  <li class="sub"><a href="#s9b"><span class="t">Where do I change...?</span><span class="d"></span><span class="pg" data-id="s9b">21</span></a></li>
+  <li class="sub"><a href="#s9c"><span class="t">Tests</span><span class="d"></span><span class="pg" data-id="s9c">22</span></a></li>
+  <li class="sub"><a href="#s9d"><span class="t">House rules for the code</span><span class="d"></span><span class="pg" data-id="s9d">22</span></a></li>
+  <li class="top"><a href="#s10"><span class="t">10. Rules the code never breaks</span><span class="d"></span><span class="pg" data-id="s10">22</span></a></li>
+  <li class="top"><a href="#s11"><span class="t">11. Troubleshooting</span><span class="d"></span><span class="pg" data-id="s11">22</span></a></li>
+  <li class="top"><a href="#s12"><span class="t">12. Ethics and limits</span><span class="d"></span><span class="pg" data-id="s12">24</span></a></li>
+  <li class="sub"><a href="#s12a"><span class="t">Glossary</span><span class="d"></span><span class="pg" data-id="s12a">24</span></a></li>
+</ul>
+
+<!-- 1 -->
+<h1 id="s1">1. What is Sharko?</h1>
+<p>Sharko is a small program you run in the terminal. It answers one question about a loan application:</p>
+<div class="callout"><b class="k">The question Sharko answers</b>If this loan application would be rejected, what is the smallest change to the loan amount or the loan term that would get it approved?</div>
+<p>To answer it, Sharko learns from a public dataset of 4,269 past loan decisions (the Loan Approval Prediction Dataset from Kaggle, in an Indian lending setting). From those decisions it builds a model: a formula that gives any application a chance of approval from 0% to 100%. A chance of 50% or more counts as approved. All amounts are in Indian Rupees (INR).</p>
+
+<h2 id="s1a">A worked example</h2>
+<p>Here is a real run of the built-in example application:</p>
+<table>
+  <tbody>
+  <tr><td>Education</td><td>Graduate</td><td>Annual income</td><td>4,100,000 INR</td></tr>
+  <tr><td>Self-employed</td><td>No</td><td>CIBIL credit score</td><td>417</td></tr>
+  <tr><td>Dependents</td><td>2</td><td>Loan amount asked for</td><td>12,200,000 INR</td></tr>
+  <tr><td>Assets (home, business, luxury, bank)</td><td>2,700,000 / 2,200,000 / 8,800,000 / 3,300,000</td><td>Loan term asked for</td><td>8 years</td></tr>
+  </tbody>
+</table>
+<table>
+  <thead><tr><th>What Sharko tried</th><th>Result</th></tr></thead>
+  <tbody>
+  <tr><td>The application as submitted</td><td>0.3% chance of approval. Not approved.</td></tr>
+  <tr><td>Change the loan amount only</td><td>Nothing found. Sharko tried all 392 other amounts.</td></tr>
+  <tr><td>Change the loan term only</td><td>Nothing found. Sharko tried all 9 other terms.</td></tr>
+  <tr><td>Change both amount and term</td><td>Found. 14,600,000 INR over 4 years gives a 54.1% chance (approved).</td></tr>
+  </tbody>
+</table>
+
+<h2 id="s1b">What Sharko is not</h2>
+<ul>
+  <li><b>Not a lender.</b> The result is a model-generated what-if, never a loan offer or a decision.</li>
+  <li><b>Not financial advice.</b> A change that works for the model is a pattern in past data, not a recommendation.</li>
+  <li><b>Not a guarantee.</b> A high chance of approval is the model's estimate. It is not a promise that a real lender would approve.</li>
+  <li><b>Not a form filer.</b> Sharko never submits anything. It only reads, scores and reports.</li>
+</ul>
+<div class="callout"><b class="k">Why can a bigger loan become approved?</b>The model only follows patterns in the past loans it studied. A bigger loan can score higher because of those patterns, not because bigger loans are safer. Sharko says this in the result whenever the suggested amount is larger than the one asked for.</div>
+
+<!-- 2 -->
+<h1 id="s2">2. How Sharko works</h1>
+<p>Sharko works in four steps. Steps 1 and 2 always happen. Steps 3 and 4 happen only when the first answer is "not approved".</p>
+<div class="steps">
+  <div class="step"><b>1 Learn</b>The model studies 4,269 past loan decisions. Run once.</div>
+  <div class="step"><b>2 Check</b>You enter one application. The model gives a chance of approval. Every time you check.</div>
+  <div class="step"><b>3 Search</b>Try other amounts and terms, closest to yours first.</div>
+  <div class="step"><b>4 Compare</b>Three ways side by side, with the closest marked.</div>
+</div>
+<div class="bar">Steps 3 and 4 run only when the chance of approval is below 50%.</div>
+<p><b>1. Learn.</b> The <code>train</code> command shows the model the past loans. Sharko tries three kinds of model (logistic regression, random forest, gradient boosting), tests each with a repeated practice test, and keeps the best one. In this project the winner is gradient boosting. You do this once.</p>
+<p><b>2. Check.</b> You answer 11 short questions about one application. The model returns a chance of approval. At 50% or more the answer is approved, the search is skipped, and you get a report showing how safe the approval is.</p>
+<p><b>3. Search.</b> If the chance is below 50%, Sharko tries other loan amounts and terms, nearest to your request first. It scores each option with the same model and stops at the first one that reaches 50%.</p>
+<p><b>4. Compare.</b> Sharko runs the search three ways and shows them side by side. The way with the smallest change is marked as the closest.</p>
+
+<h2 id="s2a">What stays fixed and what can change</h2>
+<table>
+  <thead><tr><th>Never changes during a search (fixed)</th><th>Can change during a search</th></tr></thead>
+  <tbody><tr><td>Education, self-employed, number of dependents, annual income, CIBIL score, and the four asset values (residential, commercial, luxury, bank)</td><td>Loan amount and loan term only</td></tr></tbody>
+</table>
+
+<h2 id="s2b">The three ways of searching</h2>
+<table>
+  <thead><tr><th>Way</th><th>What changes</th><th>How many options it can try (real data)</th></tr></thead>
+  <tbody>
+  <tr><td>Amount only</td><td>The loan amount. The term stays as submitted.</td><td>392: every amount from 300,000 to 39,500,000 in steps of 100,000, except yours</td></tr>
+  <tr><td>Term only</td><td>The loan term. The amount stays as submitted.</td><td>9: the terms 2, 4, 6 ... 20 years, except yours</td></tr>
+  <tr><td>Amount and term</td><td>Both. Each option must differ from yours in both.</td><td>Up to 3,528 (392 amounts x 9 terms)</td></tr>
+  </tbody>
+</table>
+
+<h2 id="s2c">How Sharko decides what is "closest"</h2>
+<p>Every option gets a distance from your request. A distance of 0 means no change; bigger means a bigger change. Sharko tries options from the smallest distance up, so the first approved option is also the smallest change.</p>
+<div class="callout"><b class="k">distance</b>|new amount - old amount| / (largest amount - smallest amount) + |new term - old term| / (longest term - shortest term)</div>
+<p>Worked example, from the run in section 1 (old: 12,200,000 over 8 years, new: 14,600,000 over 4 years):</p>
+<table>
+  <thead><tr><th>Part</th><th>Calculation</th><th class="num">Result</th></tr></thead>
+  <tbody>
+  <tr><td>Amount part</td><td>2,400,000 / (39,500,000 - 300,000) = 2,400,000 / 39,200,000</td><td class="num">0.0612</td></tr>
+  <tr><td>Term part</td><td>4 years / (20 - 2) = 4 / 18</td><td class="num">0.2222</td></tr>
+  <tr><td>Distance</td><td>0.0612 + 0.2222</td><td class="num">0.2834</td></tr>
+  </tbody>
+</table>
+<div class="callout"><b class="k">Ties and order</b>If two options have the same distance, Sharko tries the smaller amount first, then the shorter term. Ties are decided on exact whole numbers, never on rounded decimals, so the same input always gives the same answer.</div>
+
+<!-- 3 -->
+<h1 id="s3">3. Quick start</h1>
+<p>Run every command from the Sharko project folder. You need Python 3.10 or newer.</p>
+<h3>0. Install (once)</h3>
+<pre class="cmd">python -m pip install -r requirements.txt</pre>
+<p>This installs scikit-learn, pandas, numpy, matplotlib, joblib and pytest.</p>
+<h3>1. See the start screen</h3>
+<pre class="cmd">python -m sharko</pre>
+<p>With no command, Sharko prints this short guide instead of an error:</p>
+<pre class="split">========================================================================
+SHARKO - loan what-if tool
+========================================================================
+Sharko predicts whether a loan application would be approved. If it
+would be rejected, Sharko looks for the smallest change to the loan
+amount or the loan term that would be approved.
+The amounts used here are in Indian Rupees (INR).
+
+QUICK START (2 steps)
+------------------------------------------------------------------------
+  1. python -m sharko train
+       Teach Sharko from the loan data. Run this once.
+  2. python -m sharko check --example
+       See a full worked example, no typing needed. It also
+       saves a report you can open: look in the Reports folder.
+
+THEN
+------------------------------------------------------------------------
+  python -m sharko check           Enter your own application
+  python -m sharko tutorial        Step-by-step guide
+  python -m sharko history         Look back at earlier checks
+  python -m sharko experiment      Test many loans (needed for charts)
+  python -m sharko report --open   Open the charts in your browser
+
+All commands: train, evaluate, check, history, experiment,
+robustness, scenarios, report, tutorial. Add --help to any
+command for details.</pre>
+<h3>2. Teach Sharko (once)</h3>
+<pre class="cmd">python -m sharko train</pre>
+<p>Sharko learns from <code>loan_approval_dataset.csv</code> and saves the model to <code>artifacts/model.joblib</code>. Run it again only if the data changes.</p>
+<h3>3. Try the built-in example</h3>
+<pre class="cmd">python -m sharko check --example</pre>
+<p>No typing needed. Sharko checks a sample application, prints the result, and saves a report in the Reports folder.</p>
+<h3>4. Check your own application</h3>
+<pre class="cmd">python -m sharko check</pre>
+<p>Sharko asks for your first and last name (they only name your report file), then 11 short questions. Press Ctrl+C at any time to quit.</p>
+<h3>5. See the charts for all test loans (optional)</h3>
+<pre class="cmd">python -m sharko experiment
+python -m sharko report --open</pre>
+<p>Run <code>experiment</code> first. It tests many loans and takes a short while. Then <code>report</code> draws four charts and opens them in your browser.</p>
+<h3>6. Check how steady and reliable the results are (optional)</h3>
+<pre class="cmd">python -m sharko scenarios
+python -m sharko robustness
+python -m sharko evaluate</pre>
+<p>These are for analysts. Section 7 explains what each one shows.</p>
+<div class="callout"><b class="k">Something went wrong?</b>The most common messages and their fixes are in section 11, Troubleshooting.</div>
+
+<h2 id="s3a">How long things take</h2>
+<p>Measured on Windows 11 with Python 3.14. A slower machine, or the first run, takes longer. The install time depends on your connection.</p>
+<table>
+  <thead><tr><th>Command</th><th>About</th></tr></thead>
+  <tbody>
+  <tr><td><code>python -m pip install -r requirements.txt</code></td><td>1 to 3 minutes</td></tr>
+  <tr><td><code>python -m sharko train</code></td><td>10 seconds</td></tr>
+  <tr><td><code>python -m sharko evaluate</code></td><td>5 seconds</td></tr>
+  <tr><td><code>python -m sharko check --example</code></td><td>6 seconds</td></tr>
+  <tr><td><code>python -m sharko experiment</code></td><td>25 seconds</td></tr>
+  <tr><td><code>python -m sharko scenarios</code></td><td>25 seconds</td></tr>
+  <tr><td><code>python -m sharko report --open</code></td><td>6 seconds</td></tr>
+  <tr><td><code>python -m sharko robustness</code></td><td>3 minutes (6 full runs)</td></tr>
+  <tr><td><code>python -m pytest</code></td><td>2 to 3 minutes</td></tr>
+  </tbody>
+</table>
+
+<!-- 4 -->
+<h1 id="s4">4. Using the check command</h1>
+<p><code>python -m sharko check</code> is the command you will use most. It scores one application, runs the search if needed, prints the result, and saves your report.</p>
+<h2 id="s4a">The questions</h2>
+<p>Sharko first asks for your name, then these 11 questions. Each question shows its allowed answers. A wrong answer is explained and asked again.</p>
+<table>
+  <thead><tr><th>#</th><th>Question</th><th>Allowed answers</th></tr></thead>
+  <tbody>
+  <tr><td>-</td><td>First name, Last name</td><td>Letters, spaces, hyphens and apostrophes, 1 to 40 characters. Only used to name your report file.</td></tr>
+  <tr><td>1</td><td>Education</td><td>1 = Graduate, 2 = Not Graduate (or type the name)</td></tr>
+  <tr><td>2</td><td>Self-employed</td><td>1 = Yes, 2 = No (also y or n)</td></tr>
+  <tr><td>3</td><td>Number of dependents</td><td>A whole number, 0 or more</td></tr>
+  <tr><td>4</td><td>Annual income (INR)</td><td>A whole number, 0 or more. Commas are allowed, for example 4,100,000</td></tr>
+  <tr><td>5</td><td>CIBIL credit score</td><td>A whole number from 300 to 900</td></tr>
+  <tr><td>6</td><td>Residential assets value (INR)</td><td>A whole number, 0 or more</td></tr>
+  <tr><td>7</td><td>Commercial assets value (INR)</td><td>A whole number, 0 or more</td></tr>
+  <tr><td>8</td><td>Luxury assets value (INR)</td><td>A whole number, 0 or more</td></tr>
+  <tr><td>9</td><td>Bank asset value (INR)</td><td>A whole number, 0 or more</td></tr>
+  <tr><td>10</td><td>Loan amount (INR)</td><td>300,000 to 39,500,000 in steps of 100,000</td></tr>
+  <tr><td>11</td><td>Loan term (years)</td><td>One of 2, 4, 6, 8, 10, 12, 14, 16, 18, 20</td></tr>
+  </tbody>
+</table>
+<div class="callout"><b class="k">Where do the loan limits come from?</b>From the training data. Sharko prints them at the start when it asks the questions. They are also the limits of the search, so Sharko only suggests amounts and terms that appear in real past loans.</div>
+
+<h2 id="s4b">Skipping the questions with flags</h2>
+<p>Every question has a flag with the same name. Give all 11 with <code>--no-prompt</code> and Sharko asks nothing:</p>
+<pre class="cmd">python -m sharko check --no-prompt --first-name Ana --last-name Cruz --education Graduate
+  --self-employed No --no-of-dependents 2 --income-annum 4100000 --cibil-score 417
+  --residential-assets-value 2700000 --commercial-assets-value 2200000
+  --luxury-assets-value 8800000 --bank-asset-value 3300000 --loan-amount 12200000
+  --loan-term 8</pre>
+<table>
+  <thead><tr><th>Flag</th><th>What it does</th></tr></thead>
+  <tbody>
+  <tr><td><code>--example</code></td><td>Use the built-in sample application. Any flag you add overrides one value, for example <code>--cibil-score 800</code>.</td></tr>
+  <tr><td><code>--no-prompt</code></td><td>Never ask questions. Every answer must be a flag. Missing names become Unnamed Applicant.</td></tr>
+  <tr><td><code>--first-name</code>, <code>--last-name</code></td><td>Your name, for the report title and file name.</td></tr>
+  <tr><td><code>--open</code></td><td>Open the saved report in your browser without asking.</td></tr>
+  <tr><td><code>--reports-dir FOLDER</code></td><td>Where to save the report. Default: Reports</td></tr>
+  <tr><td><code>--out FOLDER</code></td><td>Where the experiment results are, so your report can include the paper's charts. Default: outputs</td></tr>
+  <tr><td><code>--model FILE</code></td><td>The saved model. Default: artifacts/model.joblib</td></tr>
+  <tr><td><code>--history FILE</code></td><td>The log of checks. Default: artifacts/history.jsonl</td></tr>
+  <tr><td><code>--education</code>, <code>--self-employed</code>, <code>--no-of-dependents</code>, <code>--income-annum</code>, <code>--cibil-score</code>, <code>--residential-assets-value</code>, <code>--commercial-assets-value</code>, <code>--luxury-assets-value</code>, <code>--bank-asset-value</code>, <code>--loan-amount</code>, <code>--loan-term</code></td><td>One flag per question, in the same order as the table above.</td></tr>
+  </tbody>
+</table>
+
+<h2 id="s4c">Reading the result in the terminal</h2>
+<p>Here is a real result (the built-in example). Read it from the top; you can stop at IMPORTANT.</p>
+<pre class="split">RESULT: Not approved as submitted
+------------------------------------------------------------------------
+  The model gives this application a 0.3% chance of approval. It needs
+  50.0% or more to be approved.
+
+SMALLEST CHANGE THAT WOULD BE APPROVED
+------------------------------------------------------------------------
+  Change both the amount and the term:
+    Loan amount      12,200,000 -&gt; 14,600,000 INR
+    Loan term        8 -&gt; 4 years
+    Approval chance  0.3% -&gt; 54.1% (approved)
+  Note: a bigger loan is not a safer loan. The model only follows
+  patterns in past loans, so treat this as a pattern, not as advice.
+
+HOW SHARKO FOUND THIS
+------------------------------------------------------------------------
+  1. Kept everything else about the applicant the same. Only the loan
+     amount and the loan term were allowed to change.
+  2. Listed the allowed amount and term options, closest to the original
+     request first.
+  3. Asked the model to score each option, one by one. Sharko stops at
+     the first option with a 50.0% chance or more. For the closest way,
+     that was try 363.
+  4. Did this 3 ways (amount only, term only, both) and compared them.
+
+THE 3 WAYS COMPARED
+------------------------------------------------------------------------
+  Way              Result   Options tried
+  Amount only      none               392
+  Term only        none                 9
+  Amount and term  found              363  &lt;- closest
+
+IMPORTANT
+------------------------------------------------------------------------
+Model-generated what-if result. This is not a lender decision,
+a loan offer, or financial advice. A high chance of approval is
+an estimate, not a guarantee that a real lender would approve.
+Limitations: the model reflects patterns in a public dataset that
+lacks economic variables (e.g. inflation, interest rates) and
+demographic detail. If no approved option is found, that means none
+was found within the searched amounts and terms, not that none exists.
+Scores can change with a different data split; run
+python -m sharko robustness to see by how much.</pre>
+<table>
+  <thead><tr><th>Section</th><th>What it tells you</th></tr></thead>
+  <tbody>
+  <tr><td>RESULT</td><td>Approved or not, with the model's chance of approval and the 50% cut-off.</td></tr>
+  <tr><td>SMALLEST CHANGE THAT WOULD BE APPROVED</td><td>The closest amount and term that work, with the chance before and after.</td></tr>
+  <tr><td>HOW SHARKO FOUND THIS</td><td>The four steps behind the answer, with this run's numbers.</td></tr>
+  <tr><td>THE 3 WAYS COMPARED</td><td>Amount only, term only, and both, with how many options each tried. The closest way is marked.</td></tr>
+  <tr><td>IMPORTANT</td><td>The disclaimer and the limits of the model. Always shown.</td></tr>
+  <tr><td>TECHNICAL DETAILS (for analysts)</td><td>Exact scores, distances, search limits, model quality and a short glossary. Safe to skip.</td></tr>
+  <tr><td>REPORT SAVED</td><td>Where your HTML report was written.</td></tr>
+  </tbody>
+</table>
+<h3>If the application is already approved</h3>
+<p>Sharko skips the search and says so. It also reminds you that the percentage is an estimate. This is a real run of <code>python -m sharko check --example --cibil-score 800 --loan-amount 5000000 --loan-term 12</code>:</p>
+<pre>RESULT: Approved as submitted
+------------------------------------------------------------------------
+  Congratulations! The model gives this application a 99.8% chance of
+  approval (it needs 50.0% or more). No change to the loan is needed.
+  This is the model's estimate, not a promise that a real lender will
+  approve it.
+
+HOW THIS WAS SCORED
+------------------------------------------------------------------------
+  The model compares your answers with patterns in past loan decisions
+  and gives a chance of approval. Because the answer is already
+  approved, Sharko did not search for changes.</pre>
+<h3>The end of every check</h3>
+<pre>REPORT SAVED
+------------------------------------------------------------------------
+  Your report has your answers, the result, and every try the search
+  made, step by step. It also has the paper's charts for all the test
+  loans.
+  Folder: C:\Users\you\Sharko\Reports
+  File:   Example_Applicant_Results.html
+  Open it by double-clicking the file, or in any web browser.
+  Tip: add --open to open it automatically next time.</pre>
+
+<!-- 5 -->
+<h1 id="s5">5. Your report file</h1>
+<p>Every check saves an HTML report by itself, so there is nothing extra to run. It is one file with everything inside, so you can open it in any browser or send it to a teammate.</p>
+<h3>Where it is saved and what it is called</h3>
+<ul>
+  <li><b>Folder:</b> Reports, inside the Sharko folder. The terminal prints the full path.</li>
+  <li><b>File name:</b> <code>FirstName_LastName_Results.html</code>, for example <code>Ana_Cruz_Results.html</code>.</li>
+  <li>Spaces become underscores. Accents and symbols are removed, so a name like Jos&eacute; becomes Jose.</li>
+  <li>Running check again with the same name saves <code>..._Results_2.html</code>, then <code>_3</code>, so nothing is overwritten.</li>
+  <li>Open it by double-clicking the file, answer <code>y</code> when Sharko asks, or add <code>--open</code>.</li>
+</ul>
+<h3>What is inside</h3>
+<table>
+  <thead><tr><th>Section</th><th>Not approved</th><th>Approved</th></tr></thead>
+  <tbody>
+  <tr><td>What you submitted</td><td>All 11 answers, marked Can change or Fixed</td><td>Same</td></tr>
+  <tr><td>The result</td><td>Chance, the 50% cut-off, the smallest change (before and after)</td><td>Chance and a congratulation, with the note that it is an estimate</td></tr>
+  <tr><td>How Sharko found this</td><td>The 4 steps with this run's numbers</td><td>How this was scored</td></tr>
+  <tr><td>The 3 ways compared</td><td>Result, options tried, chance after, distance</td><td>-</td></tr>
+  <tr><td>Try by try</td><td>Every option the search scored: first tries, last try, and a chart</td><td>-</td></tr>
+  <tr><td>How safe is this approval?</td><td>-</td><td>Two charts: what happens if only the term, or only the amount, changes</td></tr>
+  <tr><td>How this compares with the experiment</td><td>The paper's four charts and a you-versus-the-experiment table</td><td>The paper's four charts</td></tr>
+  <tr><td>Model quality, Important, Words used</td><td>Scores, disclaimer and limits, glossary</td><td>Same</td></tr>
+  </tbody>
+</table>
+<p><b>Try by try chart (not approved).</b> One panel per way. The dashed line is the 50% needed. A star marks the first option that reached it, where Sharko stopped. The labels stay inside their own panel.</p>
+<p><b>Safety-margin chart (approved).</b> Shows how much room an approval has. The orange dot is your application; the grey area below the dashed line is not approved.</p>
+<div class="callout"><b class="k">Privacy</b>Reports contain your name and financial details, so the Reports folder is git-ignored and never uploaded. Names are used only to title and name the report. They are not given to the model and are not written to the history log. A sample report with a made-up applicant is kept in <code>samples/reports</code>.</div>
+
+<!-- 6 -->
+<h1 id="s6">6. The experiment and the charts</h1>
+<p>The check command looks at one application. The experiment looks at many. It takes the 854 loans that were set aside for testing (never used for learning), keeps the 312 that the data marks Rejected and the model also rejects (the "eligible" loans), and runs all three searches on every one of them.</p>
+<table>
+  <thead><tr><th>Way</th><th>Found an approved option</th><th class="num">Median options tried</th><th class="num">Median distance (when found)</th></tr></thead>
+  <tbody>
+  <tr><td>Amount only</td><td>7.1% (22 of 312)</td><td class="num">392</td><td class="num">0.1110</td></tr>
+  <tr><td>Term only</td><td>47.8% (149 of 312)</td><td class="num">9</td><td class="num">0.4444</td></tr>
+  <tr><td>Amount and term</td><td>100.0% (312 of 312)</td><td class="num">1,053</td><td class="num">0.4795</td></tr>
+  </tbody>
+</table>
+<p class="note">Results from the saved experiment on the real data. They describe this trained model, not lenders in general.</p>
+<pre class="cmd">python -m sharko experiment
+python -m sharko report --open</pre>
+<p><code>experiment</code> writes <code>outputs/experiment_results.csv</code>. <code>report</code> turns it into tables and the four charts, and opens <code>Reports/Experiment_Report.html</code>, one page with all four charts and a plain caption for each.</p>
+
+<h2 id="s6a">The four charts and how to read them</h2>
+<figure><img src="../samples/outputs/flip_rate_by_strategy.png" alt="Prediction-flip rate by strategy"><figcaption><b>Prediction-flip rate by strategy.</b> The share of eligible loans where a way found an approved option. A taller bar means that way worked more often.</figcaption></figure>
+<figure><img src="../samples/outputs/distance_by_strategy.png" alt="Minimum normalized distance by strategy"><figcaption><b>Minimum normalized distance by strategy.</b> How big the needed change was, only for loans where a change was found. A lower box means a smaller change. The n under each box is how many loans it covers.</figcaption></figure>
+<figure><img src="../samples/outputs/configs_evaluated_by_strategy.png" alt="Configurations evaluated by strategy"><figcaption><b>Configurations evaluated by strategy.</b> How many options were tried before stopping, on a log scale. "Found" loans stopped early; "searched all" loans tried every option without success.</figcaption></figure>
+<figure><img src="../samples/outputs/amount_original_vs_flip.png" alt="Original vs prediction-flipping loan amount"><figcaption><b>Original vs prediction-flipping loan amount.</b> Each dot is a loan whose search changed the amount. A dot on the dashed line means the amount did not change.</figcaption></figure>
+
+<h2 id="s6b">Files the experiment and report write</h2>
+<table>
+  <thead><tr><th>File</th><th>What it holds</th></tr></thead>
+  <tbody>
+  <tr><td><code>outputs/experiment_results.csv</code></td><td>One row per eligible loan and way: the option found, distance, score change, options tried</td></tr>
+  <tr><td><code>outputs/summary.csv</code></td><td>One row per way with all the averages</td></tr>
+  <tr><td><code>outputs/paired_comparison.csv</code></td><td>Ways compared on the loans that both could fix</td></tr>
+  <tr><td><code>outputs/*.png</code></td><td>The four charts</td></tr>
+  <tr><td><code>Reports/Experiment_Report.html</code></td><td>All four charts on one page, with captions</td></tr>
+  </tbody>
+</table>
+
+<!-- 7 -->
+<h1 id="s7">7. How steady and how reliable are the results?</h1>
+<p>A model can look good once and still be fragile. Three analyst commands test that. Every number below comes from a real run on the full dataset, and the numbers are the same each time because the whole pipeline uses a fixed seed (42).</p>
+
+<h2 id="s7a">Negative assets and different random splits</h2>
+<p>The dataset has 28 loans with a negative residential asset value, which is not possible for a real asset. <code>python -m sharko robustness</code> asks two questions:</p>
+<ul>
+  <li><b>Do those 28 loans matter?</b> It trains, tests and runs all three searches twice: once on every loan, and once without those 28.</li>
+  <li><b>Does the result depend on one lucky split?</b> It repeats the whole run with 5 different random splits (seeds 42 to 46). Use <code>--seeds 10</code> for more.</li>
+</ul>
+<table>
+  <thead><tr><th>Run</th><th class="num">Loans</th><th class="num">Accuracy</th><th class="num">ROC-AUC</th><th class="num">Amount only</th><th class="num">Term only</th><th class="num">Both</th></tr></thead>
+  <tbody>
+  <tr><td>All records</td><td class="num">4,269</td><td class="num">0.9824</td><td class="num">0.9983</td><td class="num">7.1%</td><td class="num">47.8%</td><td class="num">100%</td></tr>
+  <tr><td>Without negative assets</td><td class="num">4,241</td><td class="num">0.9823</td><td class="num">0.9979</td><td class="num">8.9%</td><td class="num">48.9%</td><td class="num">100%</td></tr>
+  </tbody>
+</table>
+<table>
+  <thead><tr><th>Seed (split)</th><th class="num">Accuracy</th><th class="num">ROC-AUC</th><th class="num">Amount only</th><th class="num">Term only</th><th class="num">Both</th></tr></thead>
+  <tbody>
+  <tr><td>42</td><td class="num">0.9824</td><td class="num">0.9983</td><td class="num">7.1%</td><td class="num">47.8%</td><td class="num">100%</td></tr>
+  <tr><td>43</td><td class="num">0.9789</td><td class="num">0.9970</td><td class="num">9.7%</td><td class="num">54.0%</td><td class="num">100%</td></tr>
+  <tr><td>44</td><td class="num">0.9848</td><td class="num">0.9985</td><td class="num">8.9%</td><td class="num">47.0%</td><td class="num">100%</td></tr>
+  <tr><td>45</td><td class="num">0.9719</td><td class="num">0.9939</td><td class="num">8.4%</td><td class="num">50.0%</td><td class="num">100%</td></tr>
+  <tr><td>46</td><td class="num">0.9836</td><td class="num">0.9982</td><td class="num">6.3%</td><td class="num">53.2%</td><td class="num">100%</td></tr>
+  <tr><td><b>Mean (std)</b></td><td class="num">0.9803 (0.005)</td><td class="num">-</td><td class="num">8.1% (1.4)</td><td class="num">50.4% (3.2)</td><td class="num">100% (0)</td></tr>
+  </tbody>
+</table>
+<p class="note">The last three columns are the share of eligible test loans where that way found an approved option.</p>
+<div class="callout"><b class="k">What this means</b>Removing the 28 loans changes almost nothing (accuracy 0.982 in both runs, and the three flip rates move by about 2 points at most). Across five splits the accuracy stays between 0.972 and 0.985 and the order of the three ways never changes: both is best, then term only, then amount only. The results do not depend on those 28 loans or on one lucky split. The two files are saved as <code>outputs/robustness_sensitivity.csv</code> and <code>outputs/robustness_seeds.csv</code>.</div>
+
+<h2 id="s7b">Different kinds of applicant</h2>
+<p><code>python -m sharko scenarios</code> compares the three ways for different kinds of applicant. It uses the same 312 eligible test loans as the experiment and prints four worked examples picked from them:</p>
+<table>
+  <thead><tr><th>Example</th><th>Asked for</th><th class="num">Chance as asked</th><th>Amount only</th><th>Term only</th><th>Amount and term</th></tr></thead>
+  <tbody>
+  <tr><td>Lowest CIBIL score (300)</td><td>17,000,000 over 8 years</td><td class="num">0.1%</td><td>none found</td><td>none found</td><td>23,200,000 over 4 years (52.0%)</td></tr>
+  <tr><td>Middle CIBIL score (434)</td><td>18,300,000 over 8 years</td><td class="num">0.2%</td><td>none found</td><td>none found</td><td>20,600,000 over 4 years (52.1%)</td></tr>
+  <tr><td>Highest CIBIL score (548)</td><td>13,700,000 over 10 years</td><td class="num">1.7%</td><td>none found</td><td>13,700,000 over 4 years (90.4%)</td><td>13,600,000 over 4 years (90.4%)</td></tr>
+  <tr><td>Largest loan for the income (CIBIL 507)</td><td>6,000,000 over 6 years</td><td class="num">0.4%</td><td>none found</td><td>6,000,000 over 4 years (73.2%)</td><td>5,900,000 over 4 years (73.2%)</td></tr>
+  </tbody>
+</table>
+<p>It then splits the 312 loans into the lowest, middle and highest third of CIBIL score, annual income and loan amount relative to income, and shows how often each way found an approved option (104 loans per group):</p>
+<table>
+  <thead><tr><th>Grouped by</th><th>Group (range)</th><th class="num">Amount only</th><th class="num">Term only</th><th class="num">Both</th></tr></thead>
+  <tbody>
+  <tr><td rowspan="3">CIBIL credit score</td><td>Lowest third (300-382)</td><td class="num">5.8%</td><td class="num">48.1%</td><td class="num">100%</td></tr>
+  <tr><td>Middle third (383-472)</td><td class="num">8.7%</td><td class="num">48.1%</td><td class="num">100%</td></tr>
+  <tr><td>Highest third (473-548)</td><td class="num">6.7%</td><td class="num">47.1%</td><td class="num">100%</td></tr>
+  <tr><td rowspan="3">Annual income</td><td>Lowest third (0.2M-4.1M)</td><td class="num">3.8%</td><td class="num">52.9%</td><td class="num">100%</td></tr>
+  <tr><td>Middle third (4.1M-7.0M)</td><td class="num">7.7%</td><td class="num">45.2%</td><td class="num">100%</td></tr>
+  <tr><td>Highest third (7.0M-9.9M)</td><td class="num">9.6%</td><td class="num">45.2%</td><td class="num">100%</td></tr>
+  <tr><td rowspan="3">Loan amount / annual income</td><td>Lowest third (1.50-2.47)</td><td class="num">15.4%</td><td class="num">13.5%</td><td class="num">100%</td></tr>
+  <tr><td>Middle third (2.47-3.34)</td><td class="num">5.8%</td><td class="num">37.5%</td><td class="num">100%</td></tr>
+  <tr><td>Highest third (3.34-4.00)</td><td class="num">0.0%</td><td class="num">92.3%</td><td class="num">100%</td></tr>
+  </tbody>
+</table>
+<div class="callout"><b class="k">What this means</b>The CIBIL score barely changes how well each way works, and income changes it a little. The loan size relative to income changes it a lot. Changing only the term works for just 13.5% of the smallest loans for the income but 92.3% of the largest. Changing only the amount works best for the smallest loans (15.4%) and never for the largest (0.0%). Changing both found an option for every loan in every group. The full table, with distances, is saved as <code>outputs/scenarios.csv</code>. These are patterns in this model and dataset, not advice.</div>
+
+<h2 id="s7c">Do the percentages mean what they say?</h2>
+<p>A model can rank loans well and still give percentages that are too high or too low. <code>python -m sharko evaluate</code> checks this. It prints the Brier score (the average squared gap between the model's chance and what happened; 0 is perfect, and always answering 50% scores 0.25) and groups the 854 test loans by the chance the model gave them:</p>
+<table>
+  <thead><tr><th>Chance given</th><th class="num">Loans</th><th class="num">Model said</th><th class="num">Truly approved</th></tr></thead>
+  <tbody>
+  <tr><td>0% to 10%</td><td class="num">292</td><td class="num">0.4%</td><td class="num">0.0%</td></tr>
+  <tr><td>10% to 20%</td><td class="num">10</td><td class="num">13.8%</td><td class="num">0.0%</td></tr>
+  <tr><td>20% to 30%</td><td class="num">4</td><td class="num">25.2%</td><td class="num">25.0%</td></tr>
+  <tr><td>30% to 40%</td><td class="num">7</td><td class="num">34.8%</td><td class="num">14.3%</td></tr>
+  <tr><td>40% to 50%</td><td class="num">3</td><td class="num">46.1%</td><td class="num">66.7%</td></tr>
+  <tr><td>50% to 60%</td><td class="num">2</td><td class="num">53.6%</td><td class="num">50.0%</td></tr>
+  <tr><td>60% to 70%</td><td class="num">6</td><td class="num">65.2%</td><td class="num">100.0%</td></tr>
+  <tr><td>70% to 80%</td><td class="num">13</td><td class="num">76.1%</td><td class="num">76.9%</td></tr>
+  <tr><td>80% to 90%</td><td class="num">9</td><td class="num">85.0%</td><td class="num">44.4%</td></tr>
+  <tr><td>90% to 100%</td><td class="num">508</td><td class="num">99.5%</td><td class="num">99.6%</td></tr>
+  </tbody>
+</table>
+<div class="callout warn"><b class="k">What this means</b>The Brier score is 0.0144 and the average gap is 1.3 percentage points, so the percentages are reliable at the ends: loans scored under 10% or over 90% were almost always rejected or approved as predicted. The middle is thin. Only 54 of the 854 test loans scored between 10% and 90%, and the 80% to 90% group was truly approved less than half the time (9 loans). Sharko stops at the first option with 50% or more, so a suggested change usually lands in that middle zone. Read a suggested "52% chance" as a weaker signal than a "99% chance". Small groups are noisy, so do not read much into any one row.</div>
+
+<h2 id="s7d">Sample outputs</h2>
+<p>A copy of one full run is kept in the <code>samples</code> folder, so you can see every result without running anything. It holds the terminal output of each command, all the CSV files, the four charts, the experiment page and a report for the built-in example. <code>samples/README.md</code> lists each file and the commands that make it.</p>
+
+<!-- 8 -->
+<h1 id="s8">8. Command reference</h1>
+<p>Every command starts with <code>python -m sharko</code>. Add <code>--help</code> to any command for its options.</p>
+<table>
+  <thead><tr><th>Command</th><th>What it does</th><th>Main options (defaults)</th></tr></thead>
+  <tbody>
+  <tr><td>(none)</td><td>Prints the quick-start screen.</td><td>-</td></tr>
+  <tr><td><code>tutorial</code></td><td>Prints a step-by-step guide to installing, running and reading Sharko.</td><td>-</td></tr>
+  <tr><td><code>train</code></td><td>Tries three kinds of model, keeps the best, and saves it. Prints practice-test scores and final test scores.</td><td><code>--data</code> (loan_approval_dataset.csv), <code>--model</code> (artifacts/model.joblib)</td></tr>
+  <tr><td><code>evaluate</code></td><td>Re-tests the saved model on the held-back loans. Prints the scores, the Brier score and the calibration table.</td><td><code>--data</code>, <code>--model</code></td></tr>
+  <tr><td><code>check</code></td><td>Scores one application, searches if needed, prints the result, saves the report and logs the run.</td><td><code>--example</code>, <code>--no-prompt</code>, <code>--first-name</code>, <code>--last-name</code>, <code>--open</code>, <code>--reports-dir</code> (Reports), <code>--out</code> (outputs), <code>--model</code>, <code>--history</code>, plus one flag per question</td></tr>
+  <tr><td><code>history</code></td><td>Lists your earlier checks: time, result, chance, and the closest fix.</td><td><code>--history</code> (artifacts/history.jsonl), <code>--last</code> (10)</td></tr>
+  <tr><td><code>experiment</code></td><td>Runs all three searches on every eligible test loan and saves the results.</td><td><code>--data</code>, <code>--model</code>, <code>--out</code> (outputs)</td></tr>
+  <tr><td><code>scenarios</code></td><td>Shows four worked examples and compares the three ways by CIBIL score, income and loan size. Saves <code>scenarios.csv</code>.</td><td><code>--data</code>, <code>--model</code>, <code>--out</code> (outputs)</td></tr>
+  <tr><td><code>robustness</code></td><td>Compares the results with and without the 28 negative-asset loans, and across random splits. Saves two CSV files.</td><td><code>--data</code>, <code>--seeds</code> (5), <code>--out</code> (outputs)</td></tr>
+  <tr><td><code>report</code></td><td>Builds tables, the four charts and the experiment page from the experiment results.</td><td><code>--out</code> (outputs), <code>--reports-dir</code> (Reports), <code>--open</code></td></tr>
+  </tbody>
+</table>
+
+<h2 id="s8a">What the scores printed by train and evaluate mean</h2>
+<pre>Testing the saved model on the 20% of loans it never saw...
+  accuracy  0.9824  share of loans predicted correctly
+  precision 0.9796  when it says Approved, how often it is right
+  recall    0.9925  share of truly Approved loans it caught
+  F1        0.9860  balance of precision and recall
+  ROC-AUC   0.9983  ranks Approved above Rejected (1 = perfect)
+  Brier     0.0144  Brier score, lower is better (0 = perfect)
+  Hits and misses on the test loans:
+    Truly Rejected: 312 right, 11 wrong
+    Truly Approved: 527 right, 4 wrong</pre>
+<p>These come from the 20% of loans the model never saw while learning. ROC-AUC near 1 means the model ranks approved loans above rejected ones almost perfectly. The Brier score measures how close the percentages are to what happened. Section 7 explains the calibration table that follows these scores in the <code>evaluate</code> output.</p>
+
+<h2 id="s8b">Exit codes</h2>
+<table>
+  <thead><tr><th>Code</th><th>Meaning</th></tr></thead>
+  <tbody>
+  <tr><td>0</td><td>Finished normally.</td></tr>
+  <tr><td>2</td><td>Something to fix: a missing model or dataset, or an answer that is not allowed. The message says what.</td></tr>
+  <tr><td>130</td><td>You pressed Ctrl+C or the input ended. Nothing was saved.</td></tr>
+  </tbody>
+</table>
+
+<!-- 9 -->
+<h1 id="s9">9. How the code is organized</h1>
+<p>The code lives in the <code>sharko</code> folder. Each file does one job. This map shows how a command flows through them:</p>
+<div class="map">
+  <div class="row"><div class="lab">1 Start</div><div class="box"><b>cli.py</b>Reads your command, then runs the steps below in order. Every command starts here: python -m sharko ...</div></div>
+  <div class="row"><div class="lab">2 Do the work</div>
+    <div class="box"><b>intake.py</b>Asks the questions and checks the answers</div>
+    <div class="box"><b>model.py</b>The trained model: chance of approval and calibration</div>
+    <div class="box"><b>search.py</b>The what-if search and the distance</div>
+    <div class="box"><b>trace.py</b>Try-by-try list and safety margin</div></div>
+  <div class="row"><div class="lab">3 Show and save</div>
+    <div class="box"><b>render.py</b>The result you read in the terminal</div>
+    <div class="box"><b>applicant_report.py</b>Your report file (HTML)</div>
+    <div class="box"><b>history.py</b>A log of your checks</div>
+    <div class="box"><b>report.py</b>Experiment charts (with dashboard.py)</div></div>
+  <div class="row"><div class="lab">4 Analyst checks</div>
+    <div class="box"><b>experiment.py</b>Runs the search on many loans</div>
+    <div class="box"><b>scenarios.py</b>Compares the ways by applicant profile</div>
+    <div class="box"><b>robustness.py</b>Repeats the run without odd records and with other seeds</div></div>
+</div>
+
+<h2 id="s9a">File by file</h2>
+<table>
+  <thead><tr><th>File</th><th>Its job</th><th>Main pieces</th></tr></thead>
+  <tbody>
+  <tr><td><code>__main__.py</code></td><td>Lets you run the app with <code>python -m sharko</code>.</td><td>-</td></tr>
+  <tr><td><code>cli.py</code></td><td>Defines every command and runs the steps in order.</td><td>build_parser, main, one function per command</td></tr>
+  <tr><td><code>config.py</code></td><td>Fixed settings in one place.</td><td>SEED 42, APPROVAL_THRESHOLD 0.5, AMOUNT_STEP 100,000, FEATURES, default paths</td></tr>
+  <tr><td><code>data.py</code></td><td>Loads the dataset, splits it 80/20, works out the search limits.</td><td>load_dataset, split_dataset, SearchSpace</td></tr>
+  <tr><td><code>model.py</code></td><td>Trains and saves the model, scores applications, and checks how reliable the percentages are.</td><td>train_model, evaluate_model, approval_scores, predicted_status, calibration_table, calibration_error</td></tr>
+  <tr><td><code>search.py</code></td><td>The what-if search and the distance.</td><td>Strategy, generate_candidates, normalized_distance, run_all_strategies, SearchResult</td></tr>
+  <tr><td><code>experiment.py</code></td><td>Runs the search on many loans and summarizes.</td><td>eligible_applications, run_experiment, summarize, paired_comparison</td></tr>
+  <tr><td><code>scenarios.py</code></td><td>Splits the experiment results by applicant profile and picks the worked examples.</td><td>profile_breakdown, pick_examples, PROFILE_DIMENSIONS</td></tr>
+  <tr><td><code>robustness.py</code></td><td>Runs the whole pipeline with and without the negative-asset loans and over several seeds.</td><td>without_negative_assets, run_once, sensitivity, seed_check, spread</td></tr>
+  <tr><td><code>intake.py</code></td><td>Asks the questions and checks every answer.</td><td>validate_field, collect_applicant, collect_name, report_filename</td></tr>
+  <tr><td><code>trace.py</code></td><td>Rebuilds the try-by-try list and the safety margin for reports.</td><td>build_trace, margin_scan</td></tr>
+  <tr><td><code>render.py</code></td><td>Writes the result you read in the terminal.</td><td>format_check_result</td></tr>
+  <tr><td><code>plain.py</code></td><td>Plain-language wording helpers.</td><td>chance, wrap, search_steps, PLAIN_WAYS</td></tr>
+  <tr><td><code>messages.py</code></td><td>The disclaimer, limits note and error messages.</td><td>DISCLAIMER, LIMITATIONS_NOTE</td></tr>
+  <tr><td><code>guide.py</code></td><td>The start screen and the tutorial text.</td><td>start_screen, tutorial</td></tr>
+  <tr><td><code>applicant_report.py</code></td><td>Builds your report file.</td><td>write_applicant_report, ExperimentContext</td></tr>
+  <tr><td><code>report.py</code>, <code>dashboard.py</code></td><td>Draw the four charts and the experiment page.</td><td>generate_report, render_figures, write_dashboard</td></tr>
+  <tr><td><code>history.py</code></td><td>Appends each check to a log file. Nothing ever reads it back to change a result.</td><td>HistoryLog</td></tr>
+  </tbody>
+</table>
+
+<h2 id="s9b">Where do I change...?</h2>
+<table>
+  <thead><tr><th>I want to change</th><th>Look in</th></tr></thead>
+  <tbody>
+  <tr><td>The words printed after a check</td><td>render.py and plain.py</td></tr>
+  <tr><td>The disclaimer or the limits note</td><td>messages.py</td></tr>
+  <tr><td>The start screen or tutorial</td><td>guide.py</td></tr>
+  <tr><td>A question, its allowed answers or its error text</td><td>intake.py</td></tr>
+  <tr><td>The search limits or the split</td><td>data.py and config.py</td></tr>
+  <tr><td>How a candidate is ordered or the distance</td><td>search.py (changes the results, so run the tests)</td></tr>
+  <tr><td>The models tried or how the best is chosen</td><td>model.py</td></tr>
+  <tr><td>The calibration table or the Brier score</td><td>model.py (and the printing in cli.py)</td></tr>
+  <tr><td>The applicant groups in <code>scenarios</code></td><td>scenarios.py</td></tr>
+  <tr><td>The checks in <code>robustness</code></td><td>robustness.py</td></tr>
+  <tr><td>The look of your report page</td><td>applicant_report.py</td></tr>
+  <tr><td>The experiment charts</td><td>report.py</td></tr>
+  </tbody>
+</table>
+
+<h2 id="s9c">Tests</h2>
+<p>Run all tests with <code>python -m pytest</code>. There are 215, and they take 2 to 3 minutes. The project is built test first: a failing test is written, then the code that makes it pass. Tests run inside a scratch folder, so they never leave files in your project.</p>
+
+<h2 id="s9d">House rules for the code</h2>
+<ul>
+  <li>Run everything as <code>python -m ...</code>, with no shell-specific syntax.</li>
+  <li>Use pathlib for paths and pass <code>encoding="utf-8"</code> to every text file.</li>
+  <li>Anything printed in the terminal is plain ASCII, so it looks the same on every system.</li>
+  <li>Terminal output stays within 72 columns so it never wraps badly.</li>
+</ul>
+
+<!-- 10 -->
+<h1 id="s10">10. Rules the code never breaks</h1>
+<p>These rules come from the project paper. They keep the results fair, repeatable and honest.</p>
+<ul>
+  <li>Only the loan amount and loan term change during a search. Every other field stays as submitted.</li>
+  <li>The split is 80/20, stratified on the loan status, with seed 42. The search limits, the scaling and the choice of model use the 80% training part only. (<code>robustness</code> tries other seeds only to test how steady the results are. The official run stays on seed 42.)</li>
+  <li>Approved means a model probability of 0.5 or more. The same model and threshold are used for every option.</li>
+  <li>Options are tried in order of distance, then amount, then term. Ties are decided on exact whole numbers, never on decimals.</li>
+  <li>No single "best" way is declared. Sharko shows the three ways side by side and marks the closest; it never combines them into one weighted score.</li>
+  <li>Every result carries the disclaimer and shows the original and new amount and term, the model score and the distance.</li>
+  <li>History is write-only. Nothing ever reads it back to change a search or the model.</li>
+  <li>Sharko never submits anything and never changes the applicant's own details.</li>
+</ul>
+
+<!-- 11 -->
+<h1 id="s11">11. Troubleshooting</h1>
+<table>
+  <thead><tr><th>You see</th><th>What it means</th><th>What to do</th></tr></thead>
+  <tbody>
+  <tr><td>Model not found at ...</td><td>The model has not been trained yet.</td><td>Run <code>python -m sharko train</code></td></tr>
+  <tr><td>Dataset not found at ...</td><td>Sharko is not running in the project folder.</td><td>Open the terminal in the Sharko folder, or add <code>--data PATH</code></td></tr>
+  <tr><td>... must be one of / must be a whole number ...</td><td>An answer is outside the allowed list.</td><td>Use a value from the list shown under the question. Amounts are in steps of 100,000 and terms are even years from 2 to 20.</td></tr>
+  <tr><td>Experiment results not found</td><td><code>report</code> needs the experiment first.</td><td>Run <code>python -m sharko experiment</code>, then <code>report</code></td></tr>
+  <tr><td>Tip: run python -m sharko experiment ...</td><td>Your report was saved without the paper's charts.</td><td>Run the experiment, then run the check again</td></tr>
+  <tr><td>No module named 'sklearn' (or pandas, matplotlib)</td><td>The packages are not installed for this Python.</td><td>Run <code>python -m pip install -r requirements.txt</code> with the same <code>python</code> you use for Sharko</td></tr>
+  <tr><td><code>python</code> is too old or not found</td><td>Sharko needs Python 3.10 or newer.</td><td>Check with <code>python --version</code>. On macOS or Linux try <code>python3</code>. On Windows try <code>py</code> in place of <code>python</code>.</td></tr>
+  <tr><td>The browser did not open</td><td>Your system blocked it.</td><td>Open the file in the Reports folder yourself</td></tr>
+  <tr><td>No history yet</td><td>No check has been run.</td><td>Run <code>python -m sharko check --example</code></td></tr>
+  <tr><td>Cancelled. Nothing was saved.</td><td>You pressed Ctrl+C.</td><td>Run the command again when ready</td></tr>
+  <tr><td><code>experiment</code>, <code>scenarios</code> or <code>robustness</code> seems stuck</td><td>It is working.</td><td><code>experiment</code> prints progress. <code>scenarios</code> takes under a minute and <code>robustness</code> takes a few minutes.</td></tr>
+  <tr><td>Numbers differ slightly from this guide</td><td>A different library version, or a different data file.</td><td>Compare with <code>samples/README.md</code>, which lists the versions used</td></tr>
+  </tbody>
+</table>
+
+<!-- 12 -->
+<h1 id="s12">12. Ethics and limits</h1>
+<div class="callout warn"><b class="k">Read this before using any result</b>Model-generated what-if result. This is not a lender decision, a loan offer, or financial advice. A high chance of approval is an estimate, not a guarantee that a real lender would approve. The model reflects patterns in a public dataset that lacks economic variables (such as inflation and interest rates) and demographic detail. If no approved option is found, that means none was found within the searched amounts and terms, not that none exists. Scores can change with a different data split.</div>
+<ul>
+  <li>The results describe how this trained model behaves. A different model or a real lender could answer differently.</li>
+  <li>Sharko does not know if an applicant would accept a changed loan. A suggestion is never an offer.</li>
+  <li>The dataset has 28 loans with a negative residential asset value. They are kept as they are. The robustness check (section 7) shows that removing them changes accuracy by 0.0001 and each flip rate by about 2 points at most.</li>
+  <li>The results are steady across five random splits, but they come from one dataset. They should not be generalized automatically to other lenders or populations.</li>
+  <li>The percentages are most reliable near 0% and 100% and least reliable in the middle, which is where a suggested change usually lands (section 7).</li>
+  <li>Because the dataset has little demographic detail, Sharko makes no claim that the model is fair across groups.</li>
+  <li>Historical lending patterns can carry their own biases, and the model learns them.</li>
+</ul>
+
+<h2 id="s12a">Glossary</h2>
+<table>
+  <thead><tr><th>Word</th><th>Plain meaning</th></tr></thead>
+  <tbody>
+  <tr><td>Chance of approval</td><td>The model's estimate from 0% to 100% (also called the approval score, 0 to 1). 50% or more counts as approved.</td></tr>
+  <tr><td>Way (strategy)</td><td>One of the three searches: amount only, term only, or both.</td></tr>
+  <tr><td>Flip</td><td>A rejected application that becomes approved after a change. The "flip rate" is how often a way finds one.</td></tr>
+  <tr><td>Option, try, configuration</td><td>One amount-and-term pair the search scores. "Options tried" and "configurations evaluated" mean the same thing.</td></tr>
+  <tr><td>Distance (normalized distance)</td><td>How far an option is from your request. 0 means no change.</td></tr>
+  <tr><td>Eligible loan</td><td>A held-back test loan that the data marks Rejected and the model also rejects.</td></tr>
+  <tr><td>Held-out (test) data</td><td>20% of the loans, kept aside and never used for learning, so the scores are honest.</td></tr>
+  <tr><td>Cross-validation (CV AUC)</td><td>A repeated practice test on the training loans, used to choose the best model.</td></tr>
+  <tr><td>Accuracy, precision, recall, F1, ROC-AUC</td><td>Scores for how well the model predicts loans it never saw. Closer to 1 is better.</td></tr>
+  <tr><td>Brier score</td><td>The average squared gap between the model's chance and what happened. 0 is perfect; always answering 50% scores 0.25.</td></tr>
+  <tr><td>Calibration</td><td>Whether a "70% chance" is truly approved about 70% of the time.</td></tr>
+  <tr><td>Seed / split</td><td>A number that fixes how the loans are shuffled into the 80% and 20% parts. A different seed gives a different split.</td></tr>
+  <tr><td>Profile</td><td>A kind of applicant, such as the lowest third by CIBIL score.</td></tr>
+  <tr><td>CIBIL score</td><td>A credit score from 300 to 900.</td></tr>
+  <tr><td>INR</td><td>Indian Rupees.</td></tr>
+  </tbody>
+</table>
+
+</body>
+</html>

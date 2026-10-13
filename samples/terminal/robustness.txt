@@ -1,0 +1,53 @@
+
+========================================================================
+Robustness checks
+========================================================================
+The amounts used here are in Indian Rupees (INR).
+Each run trains the model again and runs all 3 searches, so this takes a
+few minutes in all (6 runs here). 28 loans in the data have a negative
+residential asset value. They are normally kept as they are.
+
+1. With and without the loans that have a negative asset value
+------------------------------------------------------------------------
+  all records (4,269 loans, gradient_boosting)
+    accuracy 0.9824  F1 0.9860  ROC-AUC 0.9983
+    approved option found on 312 loans: amount only 7.1%, term only
+      47.8%, amount and term 100.0%
+  without negative assets (4,241 loans, gradient_boosting)
+    accuracy 0.9823  F1 0.9858  ROC-AUC 0.9979
+    approved option found on 313 loans: amount only 8.9%, term only
+      48.9%, amount and term 100.0%
+
+2. The same run with different random splits (seeds)
+------------------------------------------------------------------------
+   Seed  Accuracy  ROC-AUC  Amount only  Term only   Both
+     42    0.9824   0.9983         7.1%      47.8% 100.0%
+     43    0.9789   0.9970         9.7%      54.0% 100.0%
+     44    0.9848   0.9985         8.9%      47.0% 100.0%
+     45    0.9719   0.9939         8.4%      50.0% 100.0%
+     46    0.9836   0.9982         6.3%      53.2% 100.0%
+
+  Across all seeds (approved option found, in %):
+    amount only  mean 8.1, std 1.4, range 6.3 to 9.7
+    term only    mean 50.4, std 3.2, range 47.0 to 54.0
+    both         mean 100.0, std 0.0, range 100.0 to 100.0
+    accuracy     mean 0.9803, std 0.0052
+
+Saved to outputs: robustness_sensitivity.csv, robustness_seeds.csv
+
+How to read this: if the numbers barely move, the results do not depend
+on one lucky split or on those few loans. A big move would be a warning.
+A high chance of approval is still a model estimate and never a promise
+that a lender will approve a loan.
+
+IMPORTANT
+------------------------------------------------------------------------
+Model-generated what-if result. This is not a lender decision,
+a loan offer, or financial advice. A high chance of approval is
+an estimate, not a guarantee that a real lender would approve.
+Limitations: the model reflects patterns in a public dataset that
+lacks economic variables (e.g. inflation, interest rates) and
+demographic detail. If no approved option is found, that means none
+was found within the searched amounts and terms, not that none exists.
+Scores can change with a different data split; run
+python -m sharko robustness to see by how much.
