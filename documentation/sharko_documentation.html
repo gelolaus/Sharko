@@ -120,7 +120,7 @@ numbers in the contents are filled in after printing. Charts come from ../sample
   <li class="sub"><a href="#s9c"><span class="t">Tests</span><span class="d"></span><span class="pg" data-id="s9c">22</span></a></li>
   <li class="sub"><a href="#s9d"><span class="t">House rules for the code</span><span class="d"></span><span class="pg" data-id="s9d">22</span></a></li>
   <li class="top"><a href="#s10"><span class="t">10. Rules the code never breaks</span><span class="d"></span><span class="pg" data-id="s10">22</span></a></li>
-  <li class="top"><a href="#s11"><span class="t">11. Troubleshooting</span><span class="d"></span><span class="pg" data-id="s11">22</span></a></li>
+  <li class="top"><a href="#s11"><span class="t">11. Troubleshooting</span><span class="d"></span><span class="pg" data-id="s11">23</span></a></li>
   <li class="top"><a href="#s12"><span class="t">12. Ethics and limits</span><span class="d"></span><span class="pg" data-id="s12">24</span></a></li>
   <li class="sub"><a href="#s12a"><span class="t">Glossary</span><span class="d"></span><span class="pg" data-id="s12a">24</span></a></li>
 </ul>
@@ -545,10 +545,11 @@ python -m sharko report --open</pre>
   <tr><td>90% to 100%</td><td class="num">508</td><td class="num">99.5%</td><td class="num">99.6%</td></tr>
   </tbody>
 </table>
+<figure><img style="width:58%" src="../samples/outputs/calibration.png" alt="Calibration chart: the chance the model gave against the share truly approved"><figcaption><b>Do the percentages mean what they say?</b> Each dot is one group of loans. A dot on the dashed line means the model's percentage matched what happened. <code>evaluate</code> saves this chart as <code>outputs/calibration.png</code>, and the experiment page shows it when <code>evaluate</code> was run first.</figcaption></figure>
 <div class="callout warn"><b class="k">What this means</b>The Brier score is 0.0144 and the average gap is 1.3 percentage points, so the percentages are reliable at the ends: loans scored under 10% or over 90% were almost always rejected or approved as predicted. The middle is thin. Only 54 of the 854 test loans scored between 10% and 90%, and the 80% to 90% group was truly approved less than half the time (9 loans). Sharko stops at the first option with 50% or more, so a suggested change usually lands in that middle zone. Read a suggested "52% chance" as a weaker signal than a "99% chance". Small groups are noisy, so do not read much into any one row.</div>
 
 <h2 id="s7d">Sample outputs</h2>
-<p>A copy of one full run is kept in the <code>samples</code> folder, so you can see every result without running anything. It holds the terminal output of each command, all the CSV files, the four charts, the experiment page and a report for the built-in example. <code>samples/README.md</code> lists each file and the commands that make it.</p>
+<p>A copy of one full run is kept in the <code>samples</code> folder, so you can see every result without running anything. It holds the terminal output of each command, all the CSV files, the charts, the experiment page and a report for the built-in example. <code>samples/README.md</code> lists each file and the commands that make it.</p>
 
 <!-- 8 -->
 <h1 id="s8">8. Command reference</h1>
@@ -559,13 +560,13 @@ python -m sharko report --open</pre>
   <tr><td>(none)</td><td>Prints the quick-start screen.</td><td>-</td></tr>
   <tr><td><code>tutorial</code></td><td>Prints a step-by-step guide to installing, running and reading Sharko.</td><td>-</td></tr>
   <tr><td><code>train</code></td><td>Tries three kinds of model, keeps the best, and saves it. Prints practice-test scores and final test scores.</td><td><code>--data</code> (loan_approval_dataset.csv), <code>--model</code> (artifacts/model.joblib)</td></tr>
-  <tr><td><code>evaluate</code></td><td>Re-tests the saved model on the held-back loans. Prints the scores, the Brier score and the calibration table.</td><td><code>--data</code>, <code>--model</code></td></tr>
+  <tr><td><code>evaluate</code></td><td>Re-tests the saved model on the held-back loans. Prints the scores, the Brier score and the calibration table, and saves the table and a chart of it.</td><td><code>--data</code>, <code>--model</code>, <code>--out</code> (outputs)</td></tr>
   <tr><td><code>check</code></td><td>Scores one application, searches if needed, prints the result, saves the report and logs the run.</td><td><code>--example</code>, <code>--no-prompt</code>, <code>--first-name</code>, <code>--last-name</code>, <code>--open</code>, <code>--reports-dir</code> (Reports), <code>--out</code> (outputs), <code>--model</code>, <code>--history</code>, plus one flag per question</td></tr>
   <tr><td><code>history</code></td><td>Lists your earlier checks: time, result, chance, and the closest fix.</td><td><code>--history</code> (artifacts/history.jsonl), <code>--last</code> (10)</td></tr>
   <tr><td><code>experiment</code></td><td>Runs all three searches on every eligible test loan and saves the results.</td><td><code>--data</code>, <code>--model</code>, <code>--out</code> (outputs)</td></tr>
   <tr><td><code>scenarios</code></td><td>Shows four worked examples and compares the three ways by CIBIL score, income and loan size. Saves <code>scenarios.csv</code>.</td><td><code>--data</code>, <code>--model</code>, <code>--out</code> (outputs)</td></tr>
-  <tr><td><code>robustness</code></td><td>Compares the results with and without the 28 negative-asset loans, and across random splits. Saves two CSV files.</td><td><code>--data</code>, <code>--seeds</code> (5), <code>--out</code> (outputs)</td></tr>
-  <tr><td><code>report</code></td><td>Builds tables, the four charts and the experiment page from the experiment results.</td><td><code>--out</code> (outputs), <code>--reports-dir</code> (Reports), <code>--open</code></td></tr>
+  <tr><td><code>robustness</code></td><td>Compares the results with and without the 28 negative-asset loans, and across random splits. Saves two CSV files.</td><td><code>--data</code>, <code>--seeds</code> (5), <code>--first-seed</code> (42), <code>--out</code> (outputs)</td></tr>
+  <tr><td><code>report</code></td><td>Builds tables, the four charts and the experiment page from the experiment results. The page also shows the calibration chart if <code>evaluate</code> was run first.</td><td><code>--out</code> (outputs), <code>--reports-dir</code> (Reports), <code>--open</code></td></tr>
   </tbody>
 </table>
 

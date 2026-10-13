@@ -34,6 +34,7 @@ Do the percentages mean what they say?
   Groups with few loans are noisy, so do not read much into one row. A
   model can rank loans well and still be a little over- or under-
   confident.
+  Saved: calibration.csv, calibration.png
 
 Next step: python -m sharko check --example
 

@@ -89,6 +89,8 @@ python -m sharko report --open
 - Configurations evaluated by strategy (box plot, log scale; shows how many loans found an option and how many tried every option)
 - Original vs. prediction-flipping loan amount (scatter plot)
 
+If you ran `evaluate` first, the page also holds a fifth chart, "Do the Percentages Mean What They Say?", that plots the model's chance of approval against how often those loans were truly approved.
+
 Without `--open`, `report` only writes the files.
 
 ## Check how steady the results are
@@ -96,7 +98,7 @@ Without `--open`, `report` only writes the files.
 `python -m sharko robustness` answers two questions a reviewer is likely to ask. It prints both tables and saves them as `outputs/robustness_sensitivity.csv` and `outputs/robustness_seeds.csv`.
 
 1. **Do the 28 loans with a negative residential asset value matter?** It trains, tests and runs all 3 searches twice, once on every loan and once without those 28, and puts the scores side by side.
-2. **Do the results depend on one lucky split?** It repeats the whole run with 5 different random splits (seeds 42 to 46) and reports the mean, spread and range. Use `--seeds 10` for more.
+2. **Do the results depend on one lucky split?** It repeats the whole run with 5 different random splits (seeds 42 to 46) and reports the mean, spread and range. Use `--seeds 10` for more, and `--first-seed 100` to start from other seeds (for example seeds 100 to 104).
 
 In a real run on the full dataset (4,269 loans):
 
@@ -119,7 +121,7 @@ It saves the table to `outputs/scenarios.csv`. In a real run the CIBIL score bar
 
 ## How far to trust the percentages
 
-`python -m sharko evaluate` also checks whether the model's chance of approval means what it says. It prints the Brier score (0 is perfect) and groups the test loans by the chance the model gave them, next to the share that were truly Approved.
+`python -m sharko evaluate` also checks whether the model's chance of approval means what it says. It prints the Brier score (0 is perfect) and groups the test loans by the chance the model gave them, next to the share that were truly Approved. It also saves the table and a chart of it as `outputs/calibration.csv` and `outputs/calibration.png`.
 
 In a real run the Brier score was 0.014 and the average gap was 1.3 percentage points. The model is reliable at the ends: loans it scored under 10% or over 90% were almost always rejected or approved as predicted. The middle is thin. Only about 50 test loans scored between 10% and 90%, and the 80% to 90% group was truly approved less than half the time (9 loans). Sharko stops at the first option with 50% or more, so a suggested change usually lands in that middle zone. Read a suggested "52% chance" as a weaker signal than a "99% chance".
 
@@ -180,7 +182,7 @@ These folders are generated and git-ignored.
 - `artifacts/model.joblib` - the trained model
 - `artifacts/history.jsonl` - a log of your checks (write-only, it never changes a result)
 - `Reports/` - your reports (`FirstName_LastName_Results.html`) and the charts page (`Experiment_Report.html`)
-- `outputs/` - `experiment_results.csv`, `summary.csv`, `paired_comparison.csv`, `scenarios.csv`, `robustness_sensitivity.csv`, `robustness_seeds.csv` and the charts (`.png`)
+- `outputs/` - `experiment_results.csv`, `summary.csv`, `paired_comparison.csv`, `scenarios.csv`, `calibration.csv`, `robustness_sensitivity.csv`, `robustness_seeds.csv` and the charts (`.png`)
 
 A copy of one full run (terminal output, CSVs, charts and example reports) is kept in `samples/`, so you can see the results without running anything. See `samples/README.md`.
 

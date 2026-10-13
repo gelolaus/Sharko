@@ -39,10 +39,12 @@ The files are written to `outputs/` and `Reports/`, which are git-ignored. This 
 | `outputs/summary.csv` | `report` | one row per way, with all the averages |
 | `outputs/paired_comparison.csv` | `report` | the ways compared on loans both could fix |
 | `outputs/scenarios.csv` | `scenarios` | the comparison by CIBIL score, income and loan size |
+| `outputs/calibration.csv` | `evaluate` | the calibration table: the chance the model gave vs the share truly approved |
 | `outputs/robustness_sensitivity.csv` | `robustness` | with and without the negative-asset loans |
 | `outputs/robustness_seeds.csv` | `robustness` | one row per random split |
-| `outputs/*.png` | `report` | the paper's four charts |
-| `reports/Experiment_Report.html` | `report` | all four charts on one page |
+| `outputs/calibration.png` | `evaluate` | the calibration chart |
+| `outputs/*.png` (the other four) | `report` | the paper's four charts |
+| `reports/Experiment_Report.html` | `report` | all four charts, and the calibration chart, on one page |
 | `reports/Example_Applicant_Results.html` | `check --example` | the report a user gets for one application |
 
 The two HTML files are single files. Open them in any browser.
