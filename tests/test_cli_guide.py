@@ -111,9 +111,11 @@ def test_missing_flag_error_names_the_flag(trained, tmp_path, capsys):
     assert code == 2 and "--education" in err
 
 
-def test_train_and_evaluate_explain_the_numbers_and_next_step(trained, capsys):
+def test_train_and_evaluate_explain_the_numbers_and_next_step(trained, tmp_path, capsys):
     code, out, _ = run(
-        ["evaluate", "--data", str(trained.csv), "--model", str(trained.model)], capsys
+        ["evaluate", "--data", str(trained.csv), "--model", str(trained.model),
+         "--out", str(tmp_path / "o")],
+        capsys,
     )
     assert code == 0
     assert "never saw" in out and "share of loans" in out

@@ -15,8 +15,9 @@ FIGURE_TITLES = {
     "distance": "Minimum Normalized Distance by Strategy",
     "configs": "Configurations Evaluated by Strategy",
     "scatter": "Original vs. Prediction-Flipping Loan Amount",
+    "calibration": "Do the Percentages Mean What They Say?",
 }
-_ORDER = ("flip_rate", "distance", "configs", "scatter")
+_ORDER = ("flip_rate", "distance", "configs", "scatter", "calibration")
 FIGURE_CAPTIONS = {
     "flip_rate": (
         "How often each way found a change the model would approve. A taller "
@@ -34,6 +35,12 @@ FIGURE_CAPTIONS = {
         "Each dot is one loan where the search changed the loan amount and "
         "found an approved option. A dot on the dashed line would mean the "
         "amount did not change."
+    ),
+    "calibration": (
+        "Loans are grouped by the chance of approval the model gave them. "
+        "Each dot is one group. A dot on the dashed line means the share of "
+        "loans truly approved matched what the model said. Dots below the "
+        "line mean the model was too optimistic."
     ),
 }
 
@@ -121,6 +128,11 @@ def figure_alt_texts(summary: pd.DataFrame) -> dict[str, str]:
         "scatter": (
             "Scatter plot of the original loan amount against the amount "
             "that flipped the prediction, with a dashed no-change line."
+        ),
+        "calibration": (
+            "Scatter plot of the approval chance the model gave each group of "
+            "test loans against the share truly approved, with a dashed line "
+            "for a perfect match."
         ),
     }
 

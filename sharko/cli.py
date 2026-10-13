@@ -61,7 +61,12 @@ from sharko.robustness import (
     without_negative_assets,
 )
 from sharko.render import PLAIN_WAYS, STRATEGY_LABELS, format_check_result
-from sharko.report import figure_bytes, generate_report
+from sharko.report import (
+    CALIBRATION_FILE,
+    figure_bytes,
+    generate_report,
+    render_calibration,
+)
 from sharko.scenarios import (
     PROFILE_DIMENSIONS,
     format_value,
@@ -201,7 +206,13 @@ def _evaluate(args: argparse.Namespace) -> int:
     print(CURRENCY_NOTE)
     print("Testing the saved model on the 20% of loans it never saw...")
     _print_metrics(evaluate_model(bundle.pipeline, test))
-    _print_calibration(approval_calibration(bundle.pipeline, test))
+    table = approval_calibration(bundle.pipeline, test)
+    _print_calibration(table)
+    out = Path(args.out)
+    out.mkdir(parents=True, exist_ok=True)
+    table.to_csv(out / "calibration.csv", index=False, lineterminator="\n", encoding="utf-8")
+    render_calibration(table, out / CALIBRATION_FILE)
+    print(f"  Saved: calibration.csv, {CALIBRATION_FILE}")
     _print_next("check --example")
     print("")
     print("IMPORTANT")
@@ -645,7 +656,7 @@ def _robustness(args: argparse.Namespace) -> int:
         return _fail("--seeds must be 2 or more, so the runs can be compared.")
     frame = load_dataset(data)
     negatives = len(frame) - len(without_negative_assets(frame))
-    seeds = [SEED + offset for offset in range(args.seeds)]
+    seeds = [args.first_seed + offset for offset in range(args.seeds)]
     _banner("Robustness checks")
     print(CURRENCY_NOTE)
     for line in wrap(
@@ -849,6 +860,12 @@ def build_parser() -> argparse.ArgumentParser:
         description="Test the saved model on loans it never saw and print the scores.",
     )
     _add_data_model(evaluate)
+    evaluate.add_argument(
+        "--out",
+        type=Path,
+        default=DEFAULT_OUT,
+        help="directory for calibration.csv and calibration.png",
+    )
     evaluate.set_defaults(func=_evaluate)
 
     check = sub.add_parser(
@@ -942,6 +959,12 @@ def build_parser() -> argparse.ArgumentParser:
         type=int,
         default=5,
         help="how many random splits to try (default: 5)",
+    )
+    robustness.add_argument(
+        "--first-seed",
+        type=int,
+        default=SEED,
+        help="the first random seed to try; the others follow it (default: 42)",
     )
     robustness.add_argument(
         "--out",

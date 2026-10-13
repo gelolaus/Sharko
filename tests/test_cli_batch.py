@@ -14,8 +14,8 @@ def test_train_saves_model_and_prints_metrics(synthetic_csv, tmp_path, capsys):
     assert load_bundle(tmp_path / "m.joblib").test_metrics["accuracy"] >= 0.95
 
 
-def test_evaluate_reproduces_saved_metrics(trained, capsys):          # `trained` fixture runs train via main()
-    assert main(["evaluate", "--data", str(trained.csv), "--model", str(trained.model)]) == 0
+def test_evaluate_reproduces_saved_metrics(trained, tmp_path, capsys):          # `trained` fixture runs train via main()
+    assert main(["evaluate", "--data", str(trained.csv), "--model", str(trained.model), "--out", str(tmp_path)]) == 0
     assert f"{load_bundle(trained.model).test_metrics['accuracy']:.4f}" in capsys.readouterr().out
 
 

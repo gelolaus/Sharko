@@ -62,3 +62,11 @@ def test_robustness_command_rejects_bad_input(synthetic_csv, capsys, extra, expe
     if "--data" in extra:
         argv = ["robustness"]
     assert main(argv + extra) == 2 and expected in capsys.readouterr().err
+
+
+def test_robustness_command_can_start_from_another_seed(synthetic_csv, tmp_path, capsys):
+    out = tmp_path / "o"
+    argv = ["robustness", "--data", str(synthetic_csv), "--seeds", "2", "--first-seed", "100", "--out", str(out)]
+    assert main(argv) == 0
+    assert list(pd.read_csv(out / "robustness_seeds.csv")["seed"]) == [100, 101]
+    assert "100" in capsys.readouterr().out

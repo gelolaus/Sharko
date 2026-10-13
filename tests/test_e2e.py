@@ -18,7 +18,8 @@ def test_end_to_end_pipeline(synthetic_csv, tmp_path):
     model_arg = str(model)
 
     assert main(["train", "--data", data, "--model", model_arg]) == 0
-    assert main(["evaluate", "--data", data, "--model", model_arg]) == 0
+    assert main(["evaluate", "--data", data, "--model", model_arg, "--out", str(out)]) == 0
+    assert (out / "calibration.csv").is_file() and (out / "calibration.png").is_file()
     assert (
         main(
             [

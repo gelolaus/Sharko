@@ -41,6 +41,7 @@ FIGURE_FILES = {
     "configs": "configs_evaluated_by_strategy.png",
     "scatter": "amount_original_vs_flip.png",
 }
+CALIBRATION_FILE = "calibration.png"
 _FIGSIZE = (7.5, 5.0)
 _DPI = 150
 
@@ -71,6 +72,9 @@ def generate_report(
 
     figures = render_figures(results, out_dir)
     written.extend(figures.values())
+    saved_calibration = out_dir / CALIBRATION_FILE
+    if saved_calibration.is_file():
+        figures = {**figures, "calibration": saved_calibration}
 
     if reports_dir is None:
         page = out_dir / "report.html"
@@ -297,6 +301,31 @@ def _scatter_amounts(flips: pd.DataFrame, eligible: int, path: Path) -> Path:
     ax.set_ylabel("Amount in the approved option (million INR)")
     _note_sample(fig, eligible)
     return _finish(fig, ax, FIGURE_TITLES["scatter"], path)
+
+
+def render_calibration(table: pd.DataFrame, path: Path) -> Path:
+    """Reliability chart: the chance the model gave vs the share truly approved."""
+    fig, ax = plt.subplots(figsize=_FIGSIZE)
+    ax.plot([0, 100], [0, 100], linestyle="--", color="#555555", linewidth=1,
+            label="perfect match")
+    if len(table) > 0:
+        ax.scatter(
+            table["mean_score"] * 100,
+            table["approved_rate"] * 100,
+            s=40 + 200 * table["loans"] / table["loans"].max(),
+            color="#0072B2",
+            edgecolors="black",
+            linewidths=0.5,
+            zorder=3,
+            label="groups of loans (bigger dot = more loans)",
+        )
+    ax.set_xlim(-3, 103)
+    ax.set_ylim(-3, 103)
+    ax.legend(loc="upper left")
+    ax.set_xlabel("Approval chance the model gave (%)")
+    ax.set_ylabel("Loans truly approved (%)")
+    fig.text(0.5, 0.05, f"n = {int(table['loans'].sum())} test loans", ha="center", fontsize=9)
+    return _finish(fig, ax, FIGURE_TITLES["calibration"], Path(path))
 
 
 def _note_sample(fig: plt.Figure, eligible: int) -> None:
