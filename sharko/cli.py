@@ -43,7 +43,9 @@ from sharko.messages import (
     missing_results_message,
 )
 from sharko.model import (
+    approval_calibration,
     approval_scores,
+    calibration_error,
     evaluate_model,
     load_bundle,
     predicted_status,
@@ -92,6 +94,8 @@ def _print_metrics(metrics: dict) -> None:
         ("F1", "f1", "balance of precision and recall"),
         ("ROC-AUC", "roc_auc", "ranks Approved above Rejected (1 = perfect)"),
     ]
+    if "brier_score" in metrics:
+        rows.append(("Brier", "brier_score", "Brier score, lower is better (0 = perfect)"))
     for label, key, meaning in rows:
         print(f"  {label:<10}{metrics[key]:.4f}  {meaning}")
     (rej_right, rej_wrong), (app_wrong, app_right) = metrics["confusion_matrix"]
@@ -160,6 +164,34 @@ def _load_split(data: Path, model: Path):
     return bundle, test
 
 
+def _print_calibration(table: pd.DataFrame) -> None:
+    for line in heading("Do the percentages mean what they say?"):
+        print(line)
+    for line in wrap(
+        "Loans are grouped by the chance of approval the model gave them. "
+        "If the model is reliable, the share that were truly Approved is "
+        "close to what it said.",
+        indent=2,
+    ):
+        print(line)
+    print(f"  {'Chance given':<16}{'Loans':>6}{'Model said':>13}{'Truly approved':>17}")
+    for row in table.itertuples():
+        band = f"{row.low:.0%} to {row.high:.0%}"
+        print(
+            f"  {band:<16}{row.loans:>6}{row.mean_score:>13.1%}"
+            f"{row.approved_rate:>17.1%}"
+        )
+    gap = calibration_error(table) * 100
+    print(f"  Average gap between the two: {gap:.1f} percentage points.")
+    for line in wrap(
+        "Groups with few loans are noisy, so do not read much into one row. "
+        "A model can rank loans well and still be a little over- or "
+        "under-confident.",
+        indent=2,
+    ):
+        print(line)
+
+
 def _evaluate(args: argparse.Namespace) -> int:
     loaded = _load_split(Path(args.data), Path(args.model))
     if isinstance(loaded, int):
@@ -169,7 +201,13 @@ def _evaluate(args: argparse.Namespace) -> int:
     print(CURRENCY_NOTE)
     print("Testing the saved model on the 20% of loans it never saw...")
     _print_metrics(evaluate_model(bundle.pipeline, test))
+    _print_calibration(approval_calibration(bundle.pipeline, test))
     _print_next("check --example")
+    print("")
+    print("IMPORTANT")
+    print("-" * WIDTH)
+    print(DISCLAIMER)
+    print(LIMITATIONS_NOTE)
     return 0
 
 

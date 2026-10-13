@@ -9,6 +9,7 @@ from sklearn.ensemble import GradientBoostingClassifier, RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import (
     accuracy_score,
+    brier_score_loss,
     confusion_matrix,
     f1_score,
     precision_score,
@@ -156,8 +157,46 @@ def evaluate_model(pipeline: Pipeline, test: pd.DataFrame) -> dict:
         "recall": float(recall_score(y_test, y_pred, zero_division=0)),
         "f1": float(f1_score(y_test, y_pred, zero_division=0)),
         "roc_auc": float(roc_auc_score(y_test, scores)),
+        "brier_score": float(brier_score_loss(y_test, scores)),
         "confusion_matrix": [[int(cm[0, 0]), int(cm[0, 1])], [int(cm[1, 0]), int(cm[1, 1])]],
     }
+
+
+CALIBRATION_COLUMNS = ["low", "high", "loans", "mean_score", "approved_rate"]
+
+
+def calibration_table(scores, labels, bins: int = 10) -> pd.DataFrame:
+    """Per score range: how many loans, the mean score, and how many were truly Approved."""
+    scores = np.asarray(scores, dtype=float)
+    labels = np.asarray(labels, dtype=float)
+    slot = np.minimum(np.floor(scores * bins).astype(int), bins - 1)
+    rows = []
+    for index in range(bins):
+        chosen = slot == index
+        if not chosen.any():
+            continue
+        rows.append(
+            {
+                "low": index / bins,
+                "high": (index + 1) / bins,
+                "loans": int(chosen.sum()),
+                "mean_score": float(scores[chosen].mean()),
+                "approved_rate": float(labels[chosen].mean()),
+            }
+        )
+    return pd.DataFrame(rows, columns=CALIBRATION_COLUMNS)
+
+
+def calibration_error(table: pd.DataFrame) -> float:
+    """Loan-weighted average gap between the mean score and the true approved rate."""
+    if table.empty:
+        return 0.0
+    gaps = (table["mean_score"] - table["approved_rate"]).abs()
+    return float((gaps * table["loans"]).sum() / table["loans"].sum())
+
+
+def approval_calibration(pipeline: Pipeline, test: pd.DataFrame) -> pd.DataFrame:
+    return calibration_table(approval_scores(pipeline, test), _encode_target(test))
 
 
 def approval_scores(pipeline: Pipeline, frame: pd.DataFrame) -> np.ndarray:
