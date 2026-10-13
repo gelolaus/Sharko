@@ -15,6 +15,7 @@ matplotlib.use("Agg")
 
 import matplotlib.pyplot as plt
 import pandas as pd
+from matplotlib.ticker import MaxNLocator
 
 from sharko.config import APPROVAL_THRESHOLD
 from sharko.dashboard import PAGE_CSS, figure_alt_texts, figure_html
@@ -190,7 +191,8 @@ def _result_section(
             '<p><span class="badge">Approved as submitted</span></p>\n'
             f"<p>Congratulations! The model gives this application a "
             f"{chance(score)} chance of approval (it needs {_CUTOFF} or more). "
-            "No change to the loan is needed.</p>"
+            "No change to the loan is needed. This is the model's estimate, "
+            "not a promise that a real lender will approve it.</p>"
         )
     parts = [
         "<h2>The result</h2>",
@@ -390,15 +392,20 @@ def _draw_trace_axes(axes, ways: list[Strategy], trace: Mapping[Strategy, list[T
             marker="o" if len(xs) <= 40 else None, markersize=3,
         )
         ax.axhline(APPROVAL_THRESHOLD * 100, linestyle="--", color="#555555", linewidth=1)
-        ax.text(0.02, APPROVAL_THRESHOLD * 100 + 2, f"{_CUTOFF} needed",
-                transform=ax.get_yaxis_transform(), fontsize=10)
+        ax.text(0.02, APPROVAL_THRESHOLD * 100 - 2, f"{_CUTOFF} needed",
+                transform=ax.get_yaxis_transform(), fontsize=10, va="top",
+                bbox={"facecolor": "white", "edgecolor": "none", "pad": 1.5, "alpha": 0.85})
+        ax.xaxis.set_major_locator(MaxNLocator(integer=True))
         winner = [item for item in tries if item.approved]
         if winner:
             hit = winner[-1]
             ax.scatter([hit.number], [hit.score * 100], marker="*", s=170,
                        color="black", zorder=5)
+            low, high = ax.get_xlim()
+            on_right = (hit.number - low) / (high - low) > 0.5
             ax.annotate(f"approved at try {hit.number:,}", (hit.number, hit.score * 100),
-                        xytext=(-10, 10), textcoords="offset points", ha="right", fontsize=10)
+                        xytext=(0, 12), textcoords="offset points",
+                        ha="right" if on_right else "left", fontsize=10)
             alt_parts.append(
                 f"{PLAIN_WAYS[strategy]}: approved at try {hit.number:,} "
                 f"({chance(hit.score)})"
