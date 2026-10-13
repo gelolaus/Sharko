@@ -3,13 +3,16 @@ from pathlib import Path
 # Both notes are hard-wrapped to fit 72 columns so every screen prints them whole.
 DISCLAIMER = (
     "Model-generated what-if result. This is not a lender decision,\n"
-    "a loan offer, or financial advice."
+    "a loan offer, or financial advice. A high chance of approval is\n"
+    "an estimate, not a guarantee that a real lender would approve."
 )
 LIMITATIONS_NOTE = (
     "Limitations: the model reflects patterns in a public dataset that\n"
     "lacks economic variables (e.g. inflation, interest rates) and\n"
     "demographic detail. If no approved option is found, that means none\n"
-    "was found within the searched amounts and terms, not that none exists."
+    "was found within the searched amounts and terms, not that none exists.\n"
+    "Scores can change with a different data split; run\n"
+    "python -m sharko robustness to see by how much."
 )
 CURRENCY_NOTE = (
     "The amounts used here are in Indian Rupees (INR)."

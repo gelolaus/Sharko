@@ -91,6 +91,15 @@ python -m sharko report --open
 
 Without `--open`, `report` only writes the files.
 
+## Check how steady the results are
+
+`python -m sharko robustness` answers two questions a reviewer is likely to ask. It prints both tables and saves them as `outputs/robustness_sensitivity.csv` and `outputs/robustness_seeds.csv`.
+
+1. **Do the 28 loans with a negative residential asset value matter?** It trains, tests and runs all 3 searches twice, once on every loan and once without those 28, and puts the scores side by side.
+2. **Do the results depend on one lucky split?** It repeats the whole run with 5 different random splits (seeds 42 to 46) and reports the mean, spread and range. Use `--seeds 10` for more.
+
+In a real run on the full dataset the accuracy stayed near 0.98 and the "approved option found" rates moved by a few points between splits. Run it yourself for the exact numbers on your machine.
+
 ## Commands
 
 | Command | What it does |
@@ -102,11 +111,41 @@ Without `--open`, `report` only writes the files.
 | `python -m sharko tutorial` | Step-by-step guide |
 | `python -m sharko evaluate` | Show how accurate the saved model is |
 | `python -m sharko experiment` | For analysts: run the search on many test loans |
+| `python -m sharko robustness` | For analysts: check the results with and without the negative-asset loans and across random splits |
 | `python -m sharko report --open` | For analysts: draw the charts and open the dashboard in your browser |
 
 Every command accepts `--help`. To skip the questions, pass every answer as a flag with `check --no-prompt`. See `python -m sharko check --help` for the flag names.
 
 Run the tests with `python -m pytest`.
+
+## How long things take
+
+Rough times on an older Intel MacBook Pro. A newer machine is faster, and the first run is a little slower.
+
+| Command | About |
+| --- | --- |
+| `python -m pip install -r requirements.txt` | 1 to 3 minutes |
+| `python -m sharko train` | 20 seconds |
+| `python -m sharko check --example` | a few seconds |
+| `python -m sharko experiment` | 30 seconds |
+| `python -m sharko report --open` | a few seconds |
+| `python -m sharko robustness` | 5 to 10 minutes (6 full runs) |
+| `python -m pytest` | about 3 minutes |
+
+## Troubleshooting
+
+| What you see | What to do |
+| --- | --- |
+| `Model not found ... Run: python -m sharko train` | Run `python -m sharko train` first. It saves the model in `artifacts/`. |
+| `Dataset not found` | Run the command from the Sharko folder, or pass `--data path/to/loan_approval_dataset.csv`. |
+| `Experiment results not found` | Run `python -m sharko experiment` before `report`. |
+| `No module named 'sklearn'` (or `pandas`, `matplotlib`) | Run `python -m pip install -r requirements.txt` with the same `python` you use for Sharko. |
+| `python` is too old or not found | Sharko needs Python 3.10 or newer. Check with `python --version`. On macOS or Linux try `python3`. |
+| The report did not open in a browser | Open the file in `Reports/` by double-clicking it. |
+| A prompt says an answer is not allowed | Read the options printed under the question. Amounts are in steps of 100,000 INR and terms are even years from 2 to 20. |
+| `experiment` or `robustness` seems stuck | It is working. The search is slow on a first run. `experiment` prints progress and `robustness` can take several minutes. |
+| `train` needs to be re-run | Run it again any time. It overwrites `artifacts/model.joblib`. |
+
 
 ## Files Sharko writes
 
@@ -115,7 +154,7 @@ These folders are generated and git-ignored.
 - `artifacts/model.joblib` - the trained model
 - `artifacts/history.jsonl` - a log of your checks (write-only, it never changes a result)
 - `Reports/` - your reports (`FirstName_LastName_Results.html`) and the charts page (`Experiment_Report.html`)
-- `outputs/` - `experiment_results.csv`, `summary.csv`, `paired_comparison.csv` and the charts (`.png`)
+- `outputs/` - `experiment_results.csv`, `summary.csv`, `paired_comparison.csv`, `robustness_sensitivity.csv`, `robustness_seeds.csv` and the charts (`.png`)
 
 ## For analysts
 
@@ -129,15 +168,18 @@ These folders are generated and git-ignored.
 
 ```
 Model-generated what-if result. This is not a lender decision,
-a loan offer, or financial advice.
+a loan offer, or financial advice. A high chance of approval is
+an estimate, not a guarantee that a real lender would approve.
 Limitations: the model reflects patterns in a public dataset that
 lacks economic variables (e.g. inflation, interest rates) and
 demographic detail. If no approved option is found, that means none
 was found within the searched amounts and terms, not that none exists.
+Scores can change with a different data split; run
+python -m sharko robustness to see by how much.
 ```
 
 Sharko reports a what-if result for a person to read. Filing an application stays with the applicant and the lender.
 
 ## Roadmap
 
-Deferred after v1: sensitivity analysis on the 28 negative-asset rows, and history-based warm-start. Retraining on history is rejected for v1.
+Deferred after v1: history-based warm-start. Retraining on history is rejected for v1. The sensitivity analysis on the 28 negative-asset rows and the check across random splits are done: see `python -m sharko robustness`.

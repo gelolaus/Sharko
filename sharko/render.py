@@ -77,7 +77,8 @@ def _approved_lines(score: float) -> list[str]:
         wrap(
             f"Congratulations! The model gives this application a "
             f"{chance(score)} chance of approval (it needs {_CUTOFF} or "
-            "more). No change to the loan is needed.",
+            "more). No change to the loan is needed. This is the model's "
+            "estimate, not a promise that a real lender will approve it.",
             indent=2,
         )
     )

@@ -36,8 +36,9 @@ def start_screen() -> str:
         "  python -m sharko experiment      Test many loans (needed for charts)",
         "  python -m sharko report --open   Open the charts in your browser",
         "",
-        "All commands: train, evaluate, check, history, experiment, report,",
-        "tutorial. Add --help to any command for details.",
+        "All commands: train, evaluate, check, history, experiment,",
+        "robustness, report, tutorial. Add --help to any command for",
+        "details.",
     ]
     return "\n".join(lines)
 
