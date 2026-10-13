@@ -50,6 +50,16 @@ def test_tutorial_walks_through_install_train_check_history(capsys):
     assert_readable(out)
 
 
+def test_guides_list_the_analyst_commands(capsys):
+    _, start, _ = run([], capsys)
+    _, tutorial, _ = run(["tutorial"], capsys)
+    for command in ("robustness", "scenarios"):
+        assert command in start
+        assert f"python -m sharko {command}" in tutorial
+    assert_readable(start)
+    assert_readable(tutorial)
+
+
 def test_check_example_runs_without_questions_and_logs_as_example(
     trained, tmp_path, capsys
 ):

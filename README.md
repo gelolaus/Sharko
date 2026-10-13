@@ -98,7 +98,30 @@ Without `--open`, `report` only writes the files.
 1. **Do the 28 loans with a negative residential asset value matter?** It trains, tests and runs all 3 searches twice, once on every loan and once without those 28, and puts the scores side by side.
 2. **Do the results depend on one lucky split?** It repeats the whole run with 5 different random splits (seeds 42 to 46) and reports the mean, spread and range. Use `--seeds 10` for more.
 
-In a real run on the full dataset the accuracy stayed near 0.98 and the "approved option found" rates moved by a few points between splits. Run it yourself for the exact numbers on your machine.
+In a real run on the full dataset (4,269 loans):
+
+| Run | Accuracy | Amount only | Term only | Both |
+| --- | --- | --- | --- | --- |
+| All loans | 0.982 | 7.1% | 47.8% | 100% |
+| Without the 28 negative-asset loans | 0.982 | 8.9% | 48.9% | 100% |
+| 5 splits (seeds 42 to 46), mean | 0.980 | 8.1% | 50.4% | 100% |
+
+Removing the 28 loans changes almost nothing, and the order of the three ways is the same on every split (both > term only > amount only). The columns are the share of eligible test loans where that way found an approved option. Run it yourself for the exact numbers on your machine.
+
+## Compare applicant profiles
+
+`python -m sharko scenarios` shows how the three ways behave for different kinds of applicant. It takes the same eligible test loans as `experiment` and prints:
+
+- four worked examples taken from those loans: the lowest, middle and highest CIBIL score, and the largest loan for the income
+- the three ways compared for the lowest, middle and highest third of CIBIL score, annual income and loan amount relative to income
+
+It saves the table to `outputs/scenarios.csv`. In a real run the CIBIL score barely changed the results and income changed them a little, but the loan size changed them a lot: changing only the term found an approved option for 13.5% of the loans with the smallest loan relative to income, and for 92.3% of those with the largest. Changing both found one for every loan in every group.
+
+## How far to trust the percentages
+
+`python -m sharko evaluate` also checks whether the model's chance of approval means what it says. It prints the Brier score (0 is perfect) and groups the test loans by the chance the model gave them, next to the share that were truly Approved.
+
+In a real run the Brier score was 0.014 and the average gap was 1.3 percentage points. The model is reliable at the ends: loans it scored under 10% or over 90% were almost always rejected or approved as predicted. The middle is thin. Only about 50 test loans scored between 10% and 90%, and the 80% to 90% group was truly approved less than half the time (9 loans). Sharko stops at the first option with 50% or more, so a suggested change usually lands in that middle zone. Read a suggested "52% chance" as a weaker signal than a "99% chance".
 
 ## Commands
 
@@ -109,8 +132,9 @@ In a real run on the full dataset the accuracy stayed near 0.98 and the "approve
 | `python -m sharko check --example` | Check a built-in sample application (also saves a report) |
 | `python -m sharko history` | List your earlier checks |
 | `python -m sharko tutorial` | Step-by-step guide |
-| `python -m sharko evaluate` | Show how accurate the saved model is |
+| `python -m sharko evaluate` | Show how accurate the saved model is and whether its percentages can be trusted |
 | `python -m sharko experiment` | For analysts: run the search on many test loans |
+| `python -m sharko scenarios` | For analysts: compare the three ways for different kinds of applicant |
 | `python -m sharko robustness` | For analysts: check the results with and without the negative-asset loans and across random splits |
 | `python -m sharko report --open` | For analysts: draw the charts and open the dashboard in your browser |
 
@@ -120,17 +144,19 @@ Run the tests with `python -m pytest`.
 
 ## How long things take
 
-Rough times on an older Intel MacBook Pro. A newer machine is faster, and the first run is a little slower.
+Measured on Windows 11 with Python 3.14. A slower machine, or the first run, takes longer. The install time depends on your connection.
 
 | Command | About |
 | --- | --- |
 | `python -m pip install -r requirements.txt` | 1 to 3 minutes |
-| `python -m sharko train` | 20 seconds |
-| `python -m sharko check --example` | a few seconds |
-| `python -m sharko experiment` | 30 seconds |
-| `python -m sharko report --open` | a few seconds |
-| `python -m sharko robustness` | 5 to 10 minutes (6 full runs) |
-| `python -m pytest` | about 3 minutes |
+| `python -m sharko train` | 10 seconds |
+| `python -m sharko evaluate` | 5 seconds |
+| `python -m sharko check --example` | 6 seconds |
+| `python -m sharko experiment` | 25 seconds |
+| `python -m sharko scenarios` | 25 seconds |
+| `python -m sharko report --open` | 6 seconds |
+| `python -m sharko robustness` | 3 minutes (6 full runs) |
+| `python -m pytest` | 2 to 3 minutes |
 
 ## Troubleshooting
 
@@ -140,10 +166,10 @@ Rough times on an older Intel MacBook Pro. A newer machine is faster, and the fi
 | `Dataset not found` | Run the command from the Sharko folder, or pass `--data path/to/loan_approval_dataset.csv`. |
 | `Experiment results not found` | Run `python -m sharko experiment` before `report`. |
 | `No module named 'sklearn'` (or `pandas`, `matplotlib`) | Run `python -m pip install -r requirements.txt` with the same `python` you use for Sharko. |
-| `python` is too old or not found | Sharko needs Python 3.10 or newer. Check with `python --version`. On macOS or Linux try `python3`. |
+| `python` is too old or not found | Sharko needs Python 3.10 or newer. Check with `python --version`. On macOS or Linux try `python3`. On Windows try `py` in place of `python`. |
 | The report did not open in a browser | Open the file in `Reports/` by double-clicking it. |
 | A prompt says an answer is not allowed | Read the options printed under the question. Amounts are in steps of 100,000 INR and terms are even years from 2 to 20. |
-| `experiment` or `robustness` seems stuck | It is working. The search is slow on a first run. `experiment` prints progress and `robustness` can take several minutes. |
+| `experiment`, `scenarios` or `robustness` seems stuck | It is working. `experiment` prints progress. `scenarios` takes under a minute and `robustness` takes a few minutes. |
 | `train` needs to be re-run | Run it again any time. It overwrites `artifacts/model.joblib`. |
 
 
@@ -154,7 +180,7 @@ These folders are generated and git-ignored.
 - `artifacts/model.joblib` - the trained model
 - `artifacts/history.jsonl` - a log of your checks (write-only, it never changes a result)
 - `Reports/` - your reports (`FirstName_LastName_Results.html`) and the charts page (`Experiment_Report.html`)
-- `outputs/` - `experiment_results.csv`, `summary.csv`, `paired_comparison.csv`, `robustness_sensitivity.csv`, `robustness_seeds.csv` and the charts (`.png`)
+- `outputs/` - `experiment_results.csv`, `summary.csv`, `paired_comparison.csv`, `scenarios.csv`, `robustness_sensitivity.csv`, `robustness_seeds.csv` and the charts (`.png`)
 
 ## For analysts
 
@@ -177,6 +203,8 @@ was found within the searched amounts and terms, not that none exists.
 Scores can change with a different data split; run
 python -m sharko robustness to see by how much.
 ```
+
+The percentages are most reliable near 0% and 100% and least reliable in the middle, which is where a suggested change usually lands (see "How far to trust the percentages"). Sharko makes no claim that the model is fair across groups, because the data has little demographic detail.
 
 Sharko reports a what-if result for a person to read. Filing an application stays with the applicant and the lender.
 

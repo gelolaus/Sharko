@@ -37,8 +37,8 @@ def start_screen() -> str:
         "  python -m sharko report --open   Open the charts in your browser",
         "",
         "All commands: train, evaluate, check, history, experiment,",
-        "robustness, report, tutorial. Add --help to any command for",
-        "details.",
+        "robustness, scenarios, report, tutorial. Add --help to any",
+        "command for details.",
     ]
     return "\n".join(lines)
 
@@ -134,7 +134,12 @@ def tutorial() -> str:
         "",
         "Also for analysts",
         _RULE,
-        "  python -m sharko evaluate    How accurate the model is",
+        "  python -m sharko evaluate    How accurate the model is, and how",
+        "                               far its percentages can be trusted",
+        "  python -m sharko scenarios   Compare the 3 ways for different",
+        "                               kinds of applicant",
+        "  python -m sharko robustness  Check the results with and without",
+        "                               odd records and on other splits",
         "",
         "Troubleshooting",
         _RULE,

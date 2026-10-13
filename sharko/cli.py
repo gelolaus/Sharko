@@ -650,7 +650,7 @@ def _robustness(args: argparse.Namespace) -> int:
     print(CURRENCY_NOTE)
     for line in wrap(
         "Each run trains the model again and runs all 3 searches, so this "
-        f"takes about a minute per run ({args.seeds + 1} runs here). "
+        f"takes a few minutes in all ({args.seeds + 1} runs here). "
         f"{negatives} loans in the data have a negative residential asset "
         "value. They are normally kept as they are."
     ):
