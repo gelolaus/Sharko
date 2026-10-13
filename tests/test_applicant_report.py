@@ -177,3 +177,45 @@ PAPER_TITLES = {
     "configs": "Configurations Evaluated by Strategy",
     "scatter": "Original vs. Prediction-Flipping Loan Amount",
 }
+
+
+def _early_winner_trace():
+    from sharko.trace import Try
+
+    def tries(count, win_at):
+        return [
+            Try(i, 1_000_000 + i * 100_000, 4, 0.01 * i, 0.62 if i == win_at else 0.3, i == win_at)
+            for i in range(1, count + 1)
+        ]
+
+    return {
+        Strategy.AMOUNT_ONLY: tries(2, 2),
+        Strategy.TERM_ONLY: tries(3, 3),
+        Strategy.COMBINED: tries(15, 1),
+    }
+
+
+def test_try_chart_labels_stay_inside_their_panel_and_do_not_overlap():
+    import matplotlib.pyplot as plt
+
+    from sharko.applicant_report import _draw_trace_axes
+
+    trace = _early_winner_trace()
+    ways = list(trace)
+    fig, axes = plt.subplots(1, len(ways), figsize=(10, 3.8), sharey=True, squeeze=False)
+    _draw_trace_axes(axes[0], ways, trace)
+    fig.tight_layout()
+    fig.canvas.draw()
+    renderer = fig.canvas.get_renderer()
+    for ax in axes[0]:
+        panel = ax.get_window_extent(renderer)
+        labels = [
+            t.get_window_extent(renderer)
+            for t in ax.texts
+            if t.get_text().startswith(("approved", "50.0%"))
+        ]
+        assert len(labels) == 2
+        for box in labels:
+            assert panel.x0 <= box.x0 and box.x1 <= panel.x1
+        assert not labels[0].overlaps(labels[1])
+    plt.close(fig)
